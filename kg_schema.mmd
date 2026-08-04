@@ -1,0 +1,123 @@
+classDiagram
+    direction TB
+
+    %% Node Types Definition
+    class BatteryCell {
+        <<battery:battery_68ed592a>>
+        +String name
+        +String model
+        +String manufacturer
+    }
+
+    class Electrode {
+        <<battery:battery_179f82fb>>
+        +String electrodeType
+    }
+
+    class PositiveElectrode {
+        <<battery:battery_b8f04fd5>>
+        +String activeMaterialType
+    }
+
+    class NegativeElectrode {
+        <<battery:battery_0a37db91>>
+        +String activeMaterialType
+    }
+
+    class Electrolyte {
+        <<battery:battery_b69c4c79>>
+        +String electrolyteState
+    }
+
+    class Material {
+        <<emmo:EMMO_4207e895>>
+        +String formula [battgpt:hasFormula]
+        +String mpId [battgpt:hasMaterialProjectId]
+        +Boolean isStable [battgpt:isStable]
+    }
+
+    class Crystal {
+        <<cryst:Crystal>>
+        +String mpId [battgpt:hasMaterialProjectId]
+    }
+
+    class UnitCell {
+        <<cryst:UnitCell>>
+        +Float lattice_a [battgpt:hasLatticea]
+        +Float lattice_b [battgpt:hasLatticeb]
+        +Float lattice_c [battgpt:hasLatticec]
+        +Float alpha [battgpt:hasAlpha]
+        +Float beta [battgpt:hasBeta]
+        +Float gamma [battgpt:hasGamma]
+    }
+
+    class AtomicSite {
+        <<cryst:AtomicSite>>
+        +Float frac_x [battgpt:hasFractionalX]
+        +Float frac_y [battgpt:hasFractionalY]
+        +Float frac_z [battgpt:hasFractionalZ]
+    }
+
+    class AtomicSpecies {
+        <<chsub:AtomicSpecies>>
+        +Int oxidationState [battgpt:hasOxidationState]
+    }
+
+    class Element {
+        <<chsub:Element>>
+        +Int atomicNumber [battgpt:hasAtomicNumber]
+        +Float electronegativity [battgpt:hasElectronegativity]
+        +String symbol [battgpt:hasSymbol]
+    }
+
+    class SpaceGroup {
+        <<cryst:SpaceGroup>>
+        +String symmetrySymbol [battgpt:hasSymmetrySymbol]
+        +Int spaceGroupNumber [battgpt:hasSpaceGroupNumber]
+    }
+
+    class CrystalSystem {
+        <<cryst:CrystalSystem>>
+        +String label [rdfs:label]
+    }
+
+    class Property {
+        <<emmo:EMMO_e1097637>>
+        +Float numericValue [emmo:hasNumberValue]
+    }
+
+    class MeasurementUnit {
+        <<emmo:EMMO_bed1d005>>
+        +String symbol [qudt:symbol]
+    }
+
+    %% Class Hierarchy / Subtyping
+    Electrode <|-- PositiveElectrode
+    Electrode <|-- NegativeElectrode
+
+    %% Graph Edge Relationships
+    BatteryCell --> PositiveElectrode : battery:hasPositiveElectrode
+    BatteryCell --> NegativeElectrode : battery:hasNegativeElectrode
+    BatteryCell --> Electrolyte : battery:hasElectrolyte
+    
+    PositiveElectrode --> Material : battgpt:usesMaterial
+    NegativeElectrode --> Material : battgpt:usesMaterial
+    Electrolyte --> Material : battgpt:usesMaterial
+    Material --> Electrode : battgpt:belongsToElectrode
+
+    Material --> Crystal : battgpt:hasStructure
+    Crystal --> UnitCell : battgpt:hasUnitCell
+    UnitCell --> AtomicSite : battgpt:containsSite
+    AtomicSite --> AtomicSpecies : battgpt:containsSpecies
+    AtomicSpecies --> Element : battgpt:hasElement
+
+    Crystal --> SpaceGroup : battgpt:hasSpaceGroup
+    Crystal --> CrystalSystem : battgpt:hasCrystalSystem
+
+    Material --> Property : emmo:hasProperty
+    Crystal --> Property : battgpt:hasBandGap
+    Crystal --> Property : battgpt:hasFormationEnergy
+    Crystal --> Property : battgpt:hasEnergyAboveHull
+    AtomicSite --> Property : battgpt:hasCoordinationGeometry
+
+    Property --> MeasurementUnit : emmo:hasMeasurementUnit
