@@ -2,7 +2,7 @@
 BATTERY MATERIALS KNOWLEDGE GRAPH VALIDATION REPORT (Stage 2.2)
 ======================================================================
 Status: PASSED (VALID)
-Total Triples: 77927
+Total Triples: 77043
 Total Material Entities: 10
 Total Crystal Structures: 10
 Total Atomic Sites: 262

@@ -45,6 +45,21 @@ STRUCTURE_FAMILY_INDIVIDUAL_MAP = {
     "ArgyroditeStructure": BATTGPT.ArgyroditeStructureIndividual,
 }
 
+# Mirrors STRUCTURE_FAMILY_INDIVIDUAL_MAP: coordination geometry is a small closed
+# vocabulary (see GEOMETRY_LOOKUP in pymatgen_processor.py), so every site sharing a
+# geometry points at one canonical NamedIndividual instead of minting a disposable
+# per-site node.
+COORDINATION_GEOMETRY_INDIVIDUAL_MAP = {
+    "Linear": BATTGPT.LinearGeometryIndividual,
+    "Trigonal Planar": BATTGPT.TrigonalPlanarGeometryIndividual,
+    "Tetrahedral": BATTGPT.TetrahedralGeometryIndividual,
+    "Square Pyramidal": BATTGPT.SquarePyramidalGeometryIndividual,
+    "Octahedral": BATTGPT.OctahedralGeometryIndividual,
+    "Pentagonal Bipyramidal": BATTGPT.PentagonalBipyramidalGeometryIndividual,
+    "Square Antiprismatic": BATTGPT.SquareAntiprismaticGeometryIndividual,
+    "Cuboctahedral": BATTGPT.CuboctahedralGeometryIndividual,
+}
+
 # battery:BatteryCell, reused (not redefined) from EMMO domain-battery.
 BATTERY_CELL_CLASS = BATTERY.battery_68ed592a_7924_45d0_a108_94d6275d57f0
 
@@ -159,14 +174,12 @@ class TripleGenerator:
             graph.add((elem_uri, BATTGPT.hasCovalentRadius, Literal(el_data.covalent_radius, datatype=XSD.double)))
             graph.add((elem_uri, BATTGPT.hasValenceElectrons, Literal(el_data.valence_electrons, datatype=XSD.integer)))
 
-            # Coordination Geometry Property Node
-            if site.coordination_geometry:
-                geom_prop_uri = URIRef(URIScheme.property_uri(record.material_id, f"site_{site.index}_coordination"))
-                graph.add((site_uri, BATTGPT.hasCoordinationGeometry, geom_prop_uri))
-                graph.add((site_uri, EMMO_HAS_PROPERTY, geom_prop_uri))
-                graph.add((geom_prop_uri, RDF.type, BATTGPT.CoordinationGeometry))
-                graph.add((geom_prop_uri, RDFS.label, Literal(site.coordination_geometry, lang="en")))
-                graph.add((geom_prop_uri, PROV.wasGeneratedBy, Literal(site.provenance, datatype=XSD.string)))
+            # Coordination Geometry: link to the shared canonical individual for this
+            # geometry (see COORDINATION_GEOMETRY_INDIVIDUAL_MAP) rather than minting a
+            # new node per site.
+            if site.coordination_geometry in COORDINATION_GEOMETRY_INDIVIDUAL_MAP:
+                geom_ind_uri = COORDINATION_GEOMETRY_INDIVIDUAL_MAP[site.coordination_geometry]
+                graph.add((site_uri, BATTGPT.hasCoordinationGeometry, geom_ind_uri))
 
             # ── 6b. Reified Crystal Bond Entities & Direct Predicates ──
             for bond in site.neighbors:

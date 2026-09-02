@@ -26,13 +26,13 @@ only.
 
 ```
 BattGpt-Ontology/           The ontology itself
-  battgpt_v0.3.0.ttl          BattGPT extension: predicates, classes, and battery-role individuals
+  battgpt.ttl          BattGPT extension: predicates, classes, and battery-role individuals
   imports/                    Local snapshots of emmo.ttl, battery.ttl, chemical-substance.ttl,
-                               battinfo.ttl (4 of the 5 ontologies battgpt_v0.3.0.ttl imports —
-                               EMMO domain-electrochemistry, added in v0.3.0, has no local snapshot
-                               yet, so Protege will fetch that one import over the network)
-  catalog-v001.xml            Protege/OWL-API catalog resolving 4 of the 5 owl:imports above to the
-                               local imports/ files, so battgpt_v0.3.0.ttl mostly opens offline
+                               battinfo.ttl, electrochemistry.ttl — all 5 ontologies battgpt.ttl
+                               imports (the electrochemistry snapshot was added in v0.3.2; before
+                               that, Protege fetched that one import over the network)
+  catalog-v001.xml            Protege/OWL-API catalog resolving all 5 owl:imports above to the
+                               local imports/ files, so battgpt.ttl opens fully offline
   UML_BattGPT_final (1).drawio  UML diagram of the ontology (open at https://app.diagrams.net)
 
 pipeline/                   Population pipeline (Python)
@@ -62,7 +62,7 @@ battinfo/                   Vendored clone of github.com/BIG-MAP/BattINFO — pr
 
 ## Ontology overview
 
-`battgpt_v0.3.0.ttl` adds, on top of EMMO / BattINFO / EMMO domain-electrochemistry:
+`battgpt.ttl` adds, on top of EMMO / BattINFO / EMMO domain-electrochemistry:
 
 - **Crystallography classes**: `CrystalStructure`, `UnitCell`, `Site`, `Species`, `SpaceGroup`,
   `CrystalSystem`, and the reified `CrystalBond` (source site, target site, bond distance,
@@ -91,7 +91,7 @@ battinfo/                   Vendored clone of github.com/BIG-MAP/BattINFO — pr
 - Materials themselves are typed as the core EMMO `ChemicalSubstance` class (not a
   domain-ontology alias), and periodic-table elements as `ChemicalElement`.
 
-`BattGpt-Ontology/battgpt_v0.3.0.ttl` is the ontology to open directly in Protege. Its
+`BattGpt-Ontology/battgpt.ttl` is the ontology to open directly in Protege. Its
 `catalog-v001.xml` + `imports/` resolve 4 of its 5 `owl:imports` locally; the 5th (EMMO
 domain-electrochemistry, added in v0.3.0) has no local snapshot cached yet, so Protege will try to
 fetch that one over the network.
@@ -122,10 +122,10 @@ battinfo/battinfo/.venv/bin/python3 scripts/build_kg.py cathodes  # 10-cathode t
 Ingests the requested materials from `pipeline/data/cached_mp_materials.json` (a real, API-sourced
 snapshot — no synthetic data), runs Pymatgen (CrystalNN bond connectivity), SMACT, BattINFO
 role-mapping, `StructureFamily` classification, and cell-level electrochemistry enrichment, builds
-the RDF graph against `BattGpt-Ontology/battgpt_v0.3.0.ttl`, validates it, and writes:
+the RDF graph against `BattGpt-Ontology/battgpt.ttl`, validates it, and writes:
 
 - `battery_kg.ttl` / `.rdf` / `.jsonld` — the knowledge graph. It declares the same 5 `owl:imports`
-  as `BattGpt-Ontology/battgpt_v0.3.0.ttl` — genuine provenance of what it extends — and also
+  as `BattGpt-Ontology/battgpt.ttl` — genuine provenance of what it extends — and also
   inlines the BattGPT predicate/class declarations plus the full local EMMO closure, so the file is
   readable standalone even without resolving those imports.
 - `catalog-v001.xml` — written alongside the KG on every export, mapping each `owl:imports` IRI to

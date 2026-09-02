@@ -16,7 +16,7 @@
 @base <https://w3id.org/battgpt/kg#> .
 
 <https://w3id.org/battgpt/kg#> rdf:type owl:Ontology ;
-                                owl:versionIRI <https://w3id.org/battgpt/kg/0.3.0/battgpt> ;
+                                owl:versionIRI <https://w3id.org/battgpt/kg/0.3.2/battgpt> ;
                                 owl:imports <https://w3id.org/battinfo> ,
                                             <https://w3id.org/emmo> ,
                                             <https://w3id.org/emmo/domain/battery> ,
@@ -25,14 +25,18 @@
                                 dcterms:created "2026-08-05T00:00:00Z"^^xsd:dateTime ;
                                 dcterms:creator "BattGPT Team"@en ;
                                 dcterms:description "Custom predicates, standards-compliant domain classes, and named role individuals for battery materials, crystallography, DFT properties, crystal connectivity, reified bond entities, battery components, and a locally-defined cathode/electrolyte crystal-structure-family taxonomy (verified to have no equivalent upstream in EMMO core, EMMO domain-battery, EMMO domain-electrochemistry, EMMO domain-chemical-substance, or EMMO's work-in-progress domain-crystallography). v0.3.0 additionally imports EMMO domain-electrochemistry explicitly (previously only reachable transitively through domain-battery) and aligns BattGPT's battery-role classes to it via skos:closeMatch."@en ;
-                                dcterms:isVersionOf <https://w3id.org/battgpt/kg#> ;
                                 dcterms:license <https://creativecommons.org/licenses/by/4.0/> ;
                                 dcterms:title "BattGPT Battery Materials Knowledge Graph Predicate & Extension Ontology"@en ;
                                 vann:preferredNamespacePrefix "battgpt" ;
                                 vann:preferredNamespaceUri "https://w3id.org/battgpt/kg#" ;
-                                rdfs:comment "Contains ObjectProperty, DatatypeProperty, SubClass, and NamedIndividual definitions extending EMMO and BattINFO. Changes in v0.3.0 relative to v0.2.2: (1) explicit owl:imports of EMMO domain-electrochemistry, plus skos:closeMatch from PositiveElectrodeRole/NegativeElectrodeRole/ElectrolyteRole/SeparatorRole to the matching electrochemistry: classes; (2) battery-cell-level electrochemical-quantity properties (hasCapacity, hasSpecificCapacity, hasIonicConductivity, hasOpenCircuitVoltage, hasCRate, hasCoulombicEfficiency, hasStateOfCharge, hasVoltage), all reusing existing EMMO domain-electrochemistry/EMMO-core range classes rather than redefining them; (3) a new StructureFamily taxonomy (StructureFamily / OxideStructureFamily / PolyanionStructureFamily / SulfideStructureFamily and their leaf structure-type classes) plus hasStructureFamily, filling the one gap confirmed absent from the whole imported EMMO/BattINFO closure; (4) a dedicated CoordinationGeometry class so hasCoordinationGeometry no longer shares its range with CrystalSystem/SpaceGroup's generic emmo:Property ancestor; (5) hasBondTo is now formally derived via an owl:propertyChainAxiom (hasBond o hasTargetSite) instead of being a second, independently-asserted fact that could drift from the reified CrystalBond; (6) belongsToElectrode's range is tightened to the union of PositiveElectrodeRole/NegativeElectrodeRole (usesMaterial, its inverse, is left general over all BatteryRole subclasses); (7) BulkModulusProperty/ShearModulusProperty are re-anchored under emmo:Pressure instead of the generic emmo:PhysicalQuantity; (8) CrystalStructure, Site, and UnitCell get explicit grounding (CrystalStructure under owl:Thing like its siblings; Site requires hasSpecies some Species; UnitCell requires hasSite some Site)."@en ;
-                                owl:priorVersion <https://w3id.org/battgpt/kg/0.2.2/battgpt> ;
-                                owl:versionInfo "0.3.0" .
+                                rdfs:comment "Contains ObjectProperty, DatatypeProperty, SubClass, and NamedIndividual definitions extending EMMO and BattINFO. Changes in v0.3.0 relative to v0.2.2: (1) explicit owl:imports of EMMO domain-electrochemistry, plus skos:closeMatch from PositiveElectrodeRole/NegativeElectrodeRole/ElectrolyteRole/SeparatorRole to the matching electrochemistry: classes; (2) battery-cell-level electrochemical-quantity properties (hasCapacity, hasSpecificCapacity, hasIonicConductivity, hasOpenCircuitVoltage, hasCRate, hasCoulombicEfficiency, hasStateOfCharge, hasVoltage), all reusing existing EMMO domain-electrochemistry/EMMO-core range classes rather than redefining them; (3) a new StructureFamily taxonomy (StructureFamily / OxideStructureFamily / PolyanionStructureFamily / SulfideStructureFamily and their leaf structure-type classes) plus hasStructureFamily, filling the one gap confirmed absent from the whole imported EMMO/BattINFO closure; (4) a dedicated CoordinationGeometry class so hasCoordinationGeometry no longer shares its range with CrystalSystem/SpaceGroup's generic emmo:Property ancestor; (5) hasBondTo is now formally derived via an owl:propertyChainAxiom (hasBond o hasTargetSite) instead of being a second, independently-asserted fact that could drift from the reified CrystalBond; (6) belongsToElectrode's range is tightened to the union of PositiveElectrodeRole/NegativeElectrodeRole (usesMaterial, its inverse, is left general over all BatteryRole subclasses); (7) BulkModulusProperty/ShearModulusProperty are re-anchored under emmo:Pressure instead of the generic emmo:PhysicalQuantity; (8) CrystalStructure, Site, and UnitCell get explicit grounding (CrystalStructure under owl:Thing like its siblings; Site requires hasSpecies some Species; UnitCell requires hasSite some Site). Changes in v0.3.1 relative to v0.3.0: (1) BatteryRole's four subclasses and StructureFamily's nine leaf classes are each now asserted owl:AllDisjointClasses, so a reasoner can catch a material mistakenly double-classified (e.g. both PositiveElectrodeRole and ElectrolyteRole, or both LayeredOxideStructure and SpinelStructure); (2) the canonical NamedIndividual sets for CoordinationGeometry, StructureFamily, and BatteryRole are each asserted owl:AllDifferent, since OWL does not assume distinctly-named individuals are actually distinct without being told so; (3) CrystalStructure now formally requires hasUnitCell some UnitCell and hasSpaceGroup some SpaceGroup, and CrystalBond now also requires hasBondDistance some xsd:double, matching what RDFValidator already enforced at the data level but the ontology itself did not previously state. Changes in v0.3.2 relative to v0.3.1: (1) the owl:inverseOf link between belongsToElectrode and usesMaterial is removed — combined with belongsToElectrode's narrowed range and the v0.3.1 role disjointness, the inverse entailed that any ElectrolyteRole/SeparatorRole individual appearing as the subject of usesMaterial was also a Positive- or NegativeElectrodeRole, making such graphs logically inconsistent; the v0.3.0 note claiming usesMaterial was 'left general over all four BatteryRole subclasses' was therefore not true under OWL semantics until this change, and now is; (2) dcterms:isVersionOf moved off the (self-referential) ontology IRI and asserted on the version IRI instead; (3) documentation-only additions: measurement units stated in the comments of the quantity-valued datatype properties, comments added to the six previously undocumented object properties, and the Site/CrystalStructure comments reworded so their prose matches the mereological entailments their subPropertyOf axioms actually carry."@en ;
+                                owl:priorVersion <https://w3id.org/battgpt/kg/0.3.1/battgpt> ;
+                                owl:versionInfo "0.3.2" .
+
+
+###  The versioned artefact is a version of the unversioned ontology IRI (v0.3.2; previously
+###  this was asserted on the unversioned IRI itself, which made it self-referential).
+<https://w3id.org/battgpt/kg/0.3.2/battgpt> dcterms:isVersionOf <https://w3id.org/battgpt/kg#> .
 
 #################################################################
 #    Annotation properties
@@ -69,12 +73,11 @@ skos:definition rdf:type owl:AnnotationProperty .
 
 ###  https://w3id.org/battgpt/kg#belongsToElectrode
 battgpt:belongsToElectrode rdf:type owl:ObjectProperty ;
-                           owl:inverseOf battgpt:usesMaterial ;
                            rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
                            rdfs:range [ rdf:type owl:Class ;
                                         owl:unionOf ( battgpt:PositiveElectrodeRole battgpt:NegativeElectrodeRole )
                                       ] ;
-                           rdfs:comment "Relates a material to the specific electrode role (positive or negative) it plays. Range tightened (v0.3.0) to the union of the two electrode-role classes so it can no longer point at ElectrolyteRoleIndividual/SeparatorRoleIndividual, which the property's name never intended. usesMaterial, its inverse, is left general over all four BatteryRole subclasses."@en ;
+                           rdfs:comment "Relates a material to the specific electrode role (positive or negative) it plays. Range tightened (v0.3.0) to the union of the two electrode-role classes so it can no longer point at ElectrolyteRoleIndividual/SeparatorRoleIndividual, which the property's name never intended. The owl:inverseOf link to usesMaterial was REMOVED in v0.3.2: with the inverse in place, this property's narrowed range propagated onto usesMaterial's subjects, so any usesMaterial assertion made from an ElectrolyteRole or SeparatorRole individual entailed that individual was a Positive- or NegativeElectrodeRole, which contradicts the v0.3.1 role disjointness axiom and made such graphs inconsistent. usesMaterial is therefore now an independent property, genuinely general over all four BatteryRole subclasses as always intended, while belongsToElectrode keeps its electrode-only range."@en ;
                            rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                            rdfs:label "belongsToElectrode"@en ;
                            skos:prefLabel "belongsToElectrode"@en .
@@ -107,6 +110,7 @@ battgpt:hasBandGap rdf:type owl:ObjectProperty ;
                    rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
                    rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
                    rdfs:range battgpt:BandGapProperty ;
+                   rdfs:comment "Relates a material to its reified electronic band gap property entity. The property node carries the value and unit; this predicate does not hold the number itself."@en ;
                    rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                    rdfs:label "hasBandGap"@en ;
                    skos:prefLabel "hasBandGap"@en .
@@ -138,6 +142,7 @@ battgpt:hasBulkModulus rdf:type owl:ObjectProperty ;
                        rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
                        rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
                        rdfs:range battgpt:BulkModulusProperty ;
+                       rdfs:comment "Relates a material to its reified bulk elastic modulus property entity (pressure-dimensioned; see BulkModulusProperty). The property node carries the value and unit."@en ;
                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                        rdfs:label "hasBulkModulus"@en ;
                        skos:prefLabel "hasBulkModulus"@en .
@@ -181,6 +186,7 @@ battgpt:hasEnergyAboveHull rdf:type owl:ObjectProperty ;
                            rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
                            rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
                            rdfs:range battgpt:EnergyAboveHullProperty ;
+                           rdfs:comment "Relates a material to its reified energy-above-convex-hull property entity, the thermodynamic stability margin relative to the competing phase assemblage. The property node carries the value and unit."@en ;
                            rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                            rdfs:label "hasEnergyAboveHull"@en ;
                            skos:prefLabel "hasEnergyAboveHull"@en .
@@ -191,6 +197,7 @@ battgpt:hasFormationEnergy rdf:type owl:ObjectProperty ;
                            rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
                            rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
                            rdfs:range battgpt:FormationEnergyProperty ;
+                           rdfs:comment "Relates a material to its reified formation energy property entity, computed against the reference elemental phases. The property node carries the value and unit."@en ;
                            rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                            rdfs:label "hasFormationEnergy"@en ;
                            skos:prefLabel "hasFormationEnergy"@en .
@@ -201,6 +208,7 @@ battgpt:hasShearModulus rdf:type owl:ObjectProperty ;
                         rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
                         rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
                         rdfs:range battgpt:ShearModulusProperty ;
+                        rdfs:comment "Relates a material to its reified shear elastic modulus property entity (pressure-dimensioned; see ShearModulusProperty). The property node carries the value and unit."@en ;
                         rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                         rdfs:label "hasShearModulus"@en ;
                         skos:prefLabel "hasShearModulus"@en .
@@ -274,6 +282,7 @@ battgpt:hasUnitCell rdf:type owl:ObjectProperty ;
 battgpt:usesMaterial rdf:type owl:ObjectProperty ;
                      rdfs:domain battgpt:BatteryRole ;
                      rdfs:range emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                     rdfs:comment "Relates a battery functional role to a material that fills that role in a cell. Applies to all four BatteryRole subclasses, including ElectrolyteRole and SeparatorRole. Independent of belongsToElectrode since v0.3.2: the two are no longer declared owl:inverseOf, because that inverse propagated belongsToElectrode's electrode-only range onto this property's subjects."@en ;
                      rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                      rdfs:label "usesMaterial"@en ;
                      skos:prefLabel "usesMaterial"@en .
@@ -389,6 +398,7 @@ battgpt:hasVoltage rdf:type owl:ObjectProperty ;
 battgpt:hasAlpha rdf:type owl:DatatypeProperty ;
                  rdfs:domain battgpt:UnitCell ;
                  rdfs:range xsd:double ;
+                 rdfs:comment "Unit cell lattice angle alpha, in degrees."@en ;
                  rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                  rdfs:label "hasAlpha"@en ;
                  skos:prefLabel "hasAlpha"@en .
@@ -398,6 +408,7 @@ battgpt:hasAlpha rdf:type owl:DatatypeProperty ;
 battgpt:hasAtomicMass rdf:type owl:DatatypeProperty ;
                       rdfs:domain emmo:EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf ;
                       rdfs:range xsd:double ;
+                      rdfs:comment "Standard atomic weight of the element, in unified atomic mass units (u, equivalently g/mol)."@en ;
                       rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                       rdfs:label "hasAtomicMass"@en ;
                       skos:prefLabel "hasAtomicMass"@en .
@@ -407,6 +418,7 @@ battgpt:hasAtomicMass rdf:type owl:DatatypeProperty ;
 battgpt:hasBeta rdf:type owl:DatatypeProperty ;
                 rdfs:domain battgpt:UnitCell ;
                 rdfs:range xsd:double ;
+                rdfs:comment "Unit cell lattice angle beta, in degrees."@en ;
                 rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                 rdfs:label "hasBeta"@en ;
                 skos:prefLabel "hasBeta"@en .
@@ -454,6 +466,7 @@ battgpt:hasCoordinationMethod rdf:type owl:DatatypeProperty ;
 battgpt:hasCovalentRadius rdf:type owl:DatatypeProperty ;
                           rdfs:domain emmo:EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf ;
                           rdfs:range xsd:double ;
+                          rdfs:comment "Covalent radius of the element, in Angstroms."@en ;
                           rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                           rdfs:label "hasCovalentRadius"@en ;
                           skos:prefLabel "hasCovalentRadius"@en .
@@ -463,6 +476,7 @@ battgpt:hasCovalentRadius rdf:type owl:DatatypeProperty ;
 battgpt:hasElectronegativity rdf:type owl:DatatypeProperty ;
                              rdfs:domain emmo:EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf ;
                              rdfs:range xsd:double ;
+                             rdfs:comment "Pauling-scale electronegativity of the element. Dimensionless."@en ;
                              rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                              rdfs:label "hasElectronegativity"@en ;
                              skos:prefLabel "hasElectronegativity"@en .
@@ -481,6 +495,7 @@ battgpt:hasFormula rdf:type owl:DatatypeProperty ;
 battgpt:hasFractionalX rdf:type owl:DatatypeProperty ;
                        rdfs:domain battgpt:Site ;
                        rdfs:range xsd:double ;
+                       rdfs:comment "Fractional coordinate of the site along the a axis. Dimensionless, conventionally in [0,1)."@en ;
                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                        rdfs:label "hasFractionalX"@en ;
                        skos:prefLabel "hasFractionalX"@en .
@@ -490,6 +505,7 @@ battgpt:hasFractionalX rdf:type owl:DatatypeProperty ;
 battgpt:hasFractionalY rdf:type owl:DatatypeProperty ;
                        rdfs:domain battgpt:Site ;
                        rdfs:range xsd:double ;
+                       rdfs:comment "Fractional coordinate of the site along the b axis. Dimensionless, conventionally in [0,1)."@en ;
                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                        rdfs:label "hasFractionalY"@en ;
                        skos:prefLabel "hasFractionalY"@en .
@@ -499,6 +515,7 @@ battgpt:hasFractionalY rdf:type owl:DatatypeProperty ;
 battgpt:hasFractionalZ rdf:type owl:DatatypeProperty ;
                        rdfs:domain battgpt:Site ;
                        rdfs:range xsd:double ;
+                       rdfs:comment "Fractional coordinate of the site along the c axis. Dimensionless, conventionally in [0,1)."@en ;
                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                        rdfs:label "hasFractionalZ"@en ;
                        skos:prefLabel "hasFractionalZ"@en .
@@ -508,6 +525,7 @@ battgpt:hasFractionalZ rdf:type owl:DatatypeProperty ;
 battgpt:hasGamma rdf:type owl:DatatypeProperty ;
                  rdfs:domain battgpt:UnitCell ;
                  rdfs:range xsd:double ;
+                 rdfs:comment "Unit cell lattice angle gamma, in degrees."@en ;
                  rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                  rdfs:label "hasGamma"@en ;
                  skos:prefLabel "hasGamma"@en .
@@ -526,6 +544,7 @@ battgpt:hasGroup rdf:type owl:DatatypeProperty ;
 battgpt:hasLatticeA rdf:type owl:DatatypeProperty ;
                     rdfs:domain battgpt:UnitCell ;
                     rdfs:range xsd:double ;
+                    rdfs:comment "Unit cell lattice parameter a, in Angstroms (1 A = 1e-10 m)."@en ;
                     rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                     rdfs:label "hasLatticeA"@en ;
                     skos:prefLabel "hasLatticeA"@en .
@@ -535,6 +554,7 @@ battgpt:hasLatticeA rdf:type owl:DatatypeProperty ;
 battgpt:hasLatticeB rdf:type owl:DatatypeProperty ;
                     rdfs:domain battgpt:UnitCell ;
                     rdfs:range xsd:double ;
+                    rdfs:comment "Unit cell lattice parameter b, in Angstroms (1 A = 1e-10 m)."@en ;
                     rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                     rdfs:label "hasLatticeB"@en ;
                     skos:prefLabel "hasLatticeB"@en .
@@ -544,6 +564,7 @@ battgpt:hasLatticeB rdf:type owl:DatatypeProperty ;
 battgpt:hasLatticeC rdf:type owl:DatatypeProperty ;
                     rdfs:domain battgpt:UnitCell ;
                     rdfs:range xsd:double ;
+                    rdfs:comment "Unit cell lattice parameter c, in Angstroms (1 A = 1e-10 m)."@en ;
                     rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                     rdfs:label "hasLatticeC"@en ;
                     skos:prefLabel "hasLatticeC"@en .
@@ -562,6 +583,7 @@ battgpt:hasMaterialProjectId rdf:type owl:DatatypeProperty ;
 battgpt:hasOxidationState rdf:type owl:DatatypeProperty ;
                           rdfs:domain battgpt:Species ;
                           rdfs:range xsd:integer ;
+                          rdfs:comment "Formal oxidation state of the species at a site, as a signed integer. Integral by construction: this records the per-site formal state, not a composition-averaged state (which may be fractional in mixed-valence compounds)."@en ;
                           rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                           rdfs:label "hasOxidationState"@en ;
                           skos:prefLabel "hasOxidationState"@en .
@@ -728,8 +750,16 @@ battgpt:CoordinationGeometry rdf:type owl:Class ;
 
 ###  https://w3id.org/battgpt/kg#CrystalStructure
 battgpt:CrystalStructure rdf:type owl:Class ;
-                         rdfs:subClassOf owl:Thing ;
-                         rdfs:comment "Crystallographic structural representation describing the periodic arrangement, unit cell, symmetry, and atomic sites of a material. Explicitly anchored under owl:Thing (v0.3.0) for consistency with its sibling local classes (Site, UnitCell, Species, CrystalBond); no single class in EMMO core, EMMO domain-battery, EMMO domain-electrochemistry, or EMMO domain-chemical-substance cleanly captures 'the crystallographic structure of a substance', and EMMO's own domain-crystallography ontology remains an explicitly work-in-progress v0.1.0 draft not imported here, so this is left as a standalone local root rather than force-fit under an unstable upstream branch."@en ;
+                         rdfs:subClassOf owl:Thing ,
+                                         [ a owl:Restriction ;
+                                           owl:onProperty battgpt:hasUnitCell ;
+                                           owl:someValuesFrom battgpt:UnitCell
+                                         ] ,
+                                         [ a owl:Restriction ;
+                                           owl:onProperty battgpt:hasSpaceGroup ;
+                                           owl:someValuesFrom battgpt:SpaceGroup
+                                         ] ;
+                         rdfs:comment "The periodic crystalline arrangement of a material — its unit cell, symmetry, and atomic sites — construed as a structural aspect of the substance itself rather than as a document or description about it. This reading is what the formal axioms assert (v0.3.2 wording clarification, replacing the earlier phrase 'structural representation' which read as a semiotic artefact): hasStructure is a subproperty of emmo:hasPart, itself a subproperty of emmo:overlaps, so a material and its CrystalStructure are entailed to share parts — coherent for a physical arrangement, incoherent for a description of one. The serialised description of this structure is carried separately as a literal by hasCif. Explicitly anchored under owl:Thing (v0.3.0) for consistency with its sibling local classes (Site, UnitCell, Species, CrystalBond); no single class in EMMO core, EMMO domain-battery, EMMO domain-electrochemistry, or EMMO domain-chemical-substance cleanly captures 'the crystallographic structure of a substance', and EMMO's own domain-crystallography ontology remains an explicitly work-in-progress v0.1.0 draft not imported here, so this is left as a standalone local root rather than force-fit under an unstable upstream branch. Requires (v0.3.1) at least one hasUnitCell and one hasSpaceGroup value, matching what RDFValidator already enforced at the data level."@en ;
                          rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                          rdfs:label "CrystalStructure"@en ;
                          skos:prefLabel "CrystalStructure"@en .
@@ -745,8 +775,12 @@ battgpt:CrystalBond rdf:type owl:Class ;
                                     [ a owl:Restriction ;
                                       owl:onProperty battgpt:hasTargetSite ;
                                       owl:someValuesFrom battgpt:Site
+                                    ] ,
+                                    [ a owl:Restriction ;
+                                      owl:onProperty battgpt:hasBondDistance ;
+                                      owl:someValuesFrom xsd:double
                                     ] ;
-                    rdfs:comment "Explicit reified bond entity connecting source site, target site, inter-atomic distance, and coordination method."@en ;
+                    rdfs:comment "Explicit reified bond entity connecting source site, target site, inter-atomic distance, and coordination method. Requires (v0.3.1) at least one hasBondDistance value, in addition to the source/target site requirements already present."@en ;
                     rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                     rdfs:label "CrystalBond"@en ;
                     skos:definition "Explicit reified bond entity connecting source site, target site, inter-atomic distance, and coordination method."@en ;
@@ -813,7 +847,7 @@ battgpt:Site rdf:type owl:Class ;
                                owl:onProperty battgpt:hasSpecies ;
                                owl:someValuesFrom battgpt:Species
                              ] ;
-             rdfs:comment "Atomic coordinate site located within a unit cell. Requires (v0.3.0) at least one hasSpecies value, mirroring the pattern already used by CrystalBond and Species."@en ;
+             rdfs:comment "Occupied atomic site within a unit cell: the crystallographic position together with the atomic species residing at it, not a bare geometric coordinate. This reading is what the formal axioms assert (v0.3.2 wording clarification): hasSpecies is a subproperty of emmo:hasConstituent, whose domain is emmo:Object, so every Site is entailed to be an emmo:Object with its species as a constituent — coherent for an occupied site, but not for an empty coordinate triple. Vacancies are therefore not modelled as Site individuals. Requires (v0.3.0) at least one hasSpecies value, mirroring the pattern already used by CrystalBond and Species."@en ;
              rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
              rdfs:label "Site"@en ;
              skos:prefLabel "Site"@en .
@@ -981,6 +1015,46 @@ battgpt:ArgyroditeStructure rdf:type owl:Class ;
                             skos:prefLabel "ArgyroditeStructure"@en .
 
 
+#################################################################
+#    General class axioms (v0.3.1)
+#################################################################
+
+###  BatteryRole's four subclasses are mutually exclusive: a material's battery role is a
+###  single stable assignment (see usesMaterial/belongsToElectrode), never more than one at once.
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( battgpt:ElectrolyteRole
+                battgpt:NegativeElectrodeRole
+                battgpt:PositiveElectrodeRole
+                battgpt:SeparatorRole
+              )
+] .
+
+
+###  StructureFamily's three mid-tier groupings are mutually exclusive.
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( battgpt:OxideStructureFamily
+                battgpt:PolyanionStructureFamily
+                battgpt:SulfideStructureFamily
+              )
+] .
+
+
+###  Only the 9 leaf StructureFamily classes are ever assigned to a material (see
+###  StructureFamilyMapper); they are mutually exclusive so a structure cannot be
+###  simultaneously classified into two different structural prototypes.
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( battgpt:LayeredOxideStructure
+                battgpt:SpinelStructure
+                battgpt:RockSaltStructure
+                battgpt:OlivineStructure
+                battgpt:NASICONStructure
+                battgpt:GarnetStructure
+                battgpt:PerovskiteStructure
+                battgpt:LGPSTypeStructure
+                battgpt:ArgyroditeStructure
+              )
+] .
+
 
 
 #################################################################
@@ -1104,4 +1178,121 @@ battgpt:ArgyroditeStructureIndividual rdf:type owl:NamedIndividual ,
                                       skos:prefLabel "ArgyroditeStructureIndividual"@en .
 
 
-###  Generated by hand for BattGPT v0.3.0, building on the OWL API v0.2.2 export (version 4.5.29.2024-05-13T12:11:03Z) https://github.com/owlcs/owlapi
+###  https://w3id.org/battgpt/kg#LinearGeometryIndividual
+battgpt:LinearGeometryIndividual rdf:type owl:NamedIndividual ,
+                                          battgpt:CoordinationGeometry ;
+                                 rdfs:comment "Canonical individual for linear (coordination number 2) local coordination geometry."@en ;
+                                 rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                 rdfs:label "LinearGeometryIndividual"@en ;
+                                 skos:prefLabel "LinearGeometryIndividual"@en .
+
+
+###  https://w3id.org/battgpt/kg#TrigonalPlanarGeometryIndividual
+battgpt:TrigonalPlanarGeometryIndividual rdf:type owl:NamedIndividual ,
+                                                  battgpt:CoordinationGeometry ;
+                                         rdfs:comment "Canonical individual for trigonal planar (coordination number 3) local coordination geometry."@en ;
+                                         rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                         rdfs:label "TrigonalPlanarGeometryIndividual"@en ;
+                                         skos:prefLabel "TrigonalPlanarGeometryIndividual"@en .
+
+
+###  https://w3id.org/battgpt/kg#TetrahedralGeometryIndividual
+battgpt:TetrahedralGeometryIndividual rdf:type owl:NamedIndividual ,
+                                               battgpt:CoordinationGeometry ;
+                                      rdfs:comment "Canonical individual for tetrahedral (coordination number 4) local coordination geometry."@en ;
+                                      rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                      rdfs:label "TetrahedralGeometryIndividual"@en ;
+                                      skos:prefLabel "TetrahedralGeometryIndividual"@en .
+
+
+###  https://w3id.org/battgpt/kg#SquarePyramidalGeometryIndividual
+battgpt:SquarePyramidalGeometryIndividual rdf:type owl:NamedIndividual ,
+                                                   battgpt:CoordinationGeometry ;
+                                          rdfs:comment "Canonical individual for square pyramidal (coordination number 5) local coordination geometry."@en ;
+                                          rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                          rdfs:label "SquarePyramidalGeometryIndividual"@en ;
+                                          skos:prefLabel "SquarePyramidalGeometryIndividual"@en .
+
+
+###  https://w3id.org/battgpt/kg#OctahedralGeometryIndividual
+battgpt:OctahedralGeometryIndividual rdf:type owl:NamedIndividual ,
+                                             battgpt:CoordinationGeometry ;
+                                     rdfs:comment "Canonical individual for octahedral (coordination number 6) local coordination geometry."@en ;
+                                     rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                     rdfs:label "OctahedralGeometryIndividual"@en ;
+                                     skos:prefLabel "OctahedralGeometryIndividual"@en .
+
+
+###  https://w3id.org/battgpt/kg#PentagonalBipyramidalGeometryIndividual
+battgpt:PentagonalBipyramidalGeometryIndividual rdf:type owl:NamedIndividual ,
+                                                         battgpt:CoordinationGeometry ;
+                                                rdfs:comment "Canonical individual for pentagonal bipyramidal (coordination number 7) local coordination geometry."@en ;
+                                                rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                                rdfs:label "PentagonalBipyramidalGeometryIndividual"@en ;
+                                                skos:prefLabel "PentagonalBipyramidalGeometryIndividual"@en .
+
+
+###  https://w3id.org/battgpt/kg#SquareAntiprismaticGeometryIndividual
+battgpt:SquareAntiprismaticGeometryIndividual rdf:type owl:NamedIndividual ,
+                                                       battgpt:CoordinationGeometry ;
+                                              rdfs:comment "Canonical individual for square antiprismatic (coordination number 8) local coordination geometry."@en ;
+                                              rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                              rdfs:label "SquareAntiprismaticGeometryIndividual"@en ;
+                                              skos:prefLabel "SquareAntiprismaticGeometryIndividual"@en .
+
+
+###  https://w3id.org/battgpt/kg#CuboctahedralGeometryIndividual
+battgpt:CuboctahedralGeometryIndividual rdf:type owl:NamedIndividual ,
+                                                 battgpt:CoordinationGeometry ;
+                                        rdfs:comment "Canonical individual for cuboctahedral (coordination number 12) local coordination geometry."@en ;
+                                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                        rdfs:label "CuboctahedralGeometryIndividual"@en ;
+                                        skos:prefLabel "CuboctahedralGeometryIndividual"@en .
+
+
+#################################################################
+#    General individual axioms (v0.3.1)
+#################################################################
+
+###  OWL does not assume distinctly-named individuals are actually distinct unless told so;
+###  these three canonical-individual sets are each asserted pairwise distinct.
+[ rdf:type owl:AllDifferent ;
+  owl:distinctMembers ( battgpt:LinearGeometryIndividual
+                         battgpt:TrigonalPlanarGeometryIndividual
+                         battgpt:TetrahedralGeometryIndividual
+                         battgpt:SquarePyramidalGeometryIndividual
+                         battgpt:OctahedralGeometryIndividual
+                         battgpt:PentagonalBipyramidalGeometryIndividual
+                         battgpt:SquareAntiprismaticGeometryIndividual
+                         battgpt:CuboctahedralGeometryIndividual
+                       )
+] .
+
+
+[ rdf:type owl:AllDifferent ;
+  owl:distinctMembers ( battgpt:LayeredOxideStructureIndividual
+                         battgpt:SpinelStructureIndividual
+                         battgpt:RockSaltStructureIndividual
+                         battgpt:OlivineStructureIndividual
+                         battgpt:NASICONStructureIndividual
+                         battgpt:GarnetStructureIndividual
+                         battgpt:PerovskiteStructureIndividual
+                         battgpt:LGPSTypeStructureIndividual
+                         battgpt:ArgyroditeStructureIndividual
+                       )
+] .
+
+
+[ rdf:type owl:AllDifferent ;
+  owl:distinctMembers ( battgpt:ElectrolyteRoleIndividual
+                         battgpt:NegativeElectrodeRoleIndividual
+                         battgpt:PositiveElectrodeRoleIndividual
+                         battgpt:SeparatorRoleIndividual
+                       )
+] .
+
+
+###  Maintained by hand for BattGPT (current version: see owl:versionInfo in the ontology header
+###  above — this file is deliberately named battgpt.ttl, without a version suffix, so the version
+###  IRI and versionInfo remain the single source of truth). Originally built on the OWL API v0.2.2
+###  export (version 4.5.29.2024-05-13T12:11:03Z) https://github.com/owlcs/owlapi

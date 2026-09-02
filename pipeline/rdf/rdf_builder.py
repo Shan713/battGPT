@@ -8,7 +8,7 @@ from .triple_generator import TripleGenerator
 logger = logging.getLogger(__name__)
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-SCHEMA_FILE = ROOT_DIR / "BattGpt-Ontology" / "battgpt_v0.3.0.ttl"
+SCHEMA_FILE = ROOT_DIR / "BattGpt-Ontology" / "battgpt.ttl"
 
 class RDFBuilder:
     """Master RDF Graph Construction Manager binding Stage 1 namespaces and generating triples."""
@@ -36,7 +36,7 @@ class RDFBuilder:
 
     def _add_ontology_header_and_schema(self):
         """Merge the ontology header, owl:imports, and predicate/class declarations directly from
-        BattGpt-Ontology/battgpt_v0.3.0.ttl, so the exported KG always reflects whatever version of
+        BattGpt-Ontology/battgpt.ttl, so the exported KG always reflects whatever version of
         the ontology that file actually holds (version IRI, imports, and all) instead of a
         hand-duplicated copy that can silently drift out of sync with it."""
         if not SCHEMA_FILE.exists():

@@ -3,7 +3,7 @@
 Ingests curated Materials Project records from the offline cache
 (pipeline/data/cached_mp_materials.json), runs the Pymatgen / SMACT / BattINFO / StructureFamily /
 Electrochemistry enrichment stages, constructs an RDF graph bound to
-BattGpt-Ontology/battgpt_v0.3.0.ttl, validates it, and exports Turtle/RDF-XML/JSON-LD.
+BattGpt-Ontology/battgpt.ttl, validates it, and exports Turtle/RDF-XML/JSON-LD.
 
 Usage:
     python scripts/build_kg.py            # build with all curated materials -> output/battgpt_kg/
@@ -63,7 +63,7 @@ def main():
         electrochemistry.process(rec)
     logger.info("Step 2 Complete.")
 
-    logger.info("Step 3: Constructing RDF Knowledge Graph against BattGpt-Ontology/battgpt_v0.3.0.ttl...")
+    logger.info("Step 3: Constructing RDF Knowledge Graph against BattGpt-Ontology/battgpt.ttl...")
     builder = RDFBuilder()
     graph = builder.build_graph(records)
     logger.info(f"Step 3 Complete: Built RDF Graph with {len(graph):,} triples.")

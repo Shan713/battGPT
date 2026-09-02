@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
     <!--
-      Local import resolution for rdf_schema_refined.ttl / rdf_schema.ttl.
+      Local import resolution for battgpt.ttl (the ontology in this directory;
+      previously named rdf_schema.ttl / rdf_schema_refined.ttl / battgpt_v0.3.0.ttl).
 
       Points each owl:imports IRI at a local, offline snapshot in imports/,
       so Protege (and any OWL API tool) resolves them without hitting the
       network. These are the same snapshots used for the ROBOT + HermiT/ELK
       reasoner validation earlier in this project.
+
+      All five of battgpt.ttl's owl:imports are mapped below. The
+      electrochemistry mapping was added in v0.3.2: it had been missing, so
+      that one import alone still went to the network, despite eleven
+      electro: terms being referenced directly by battgpt.ttl (BatteryCell
+      quantity ranges and the four skos:closeMatch role alignments).
 
       The nested import inside battinfo.ttl targets a specific *versioned*
       battery IRI (0.13.0-beta) rather than the unversioned one below; it is
@@ -17,6 +24,7 @@
     <uri name="https://w3id.org/emmo" uri="imports/emmo.ttl"/>
     <uri name="https://w3id.org/emmo/domain/battery" uri="imports/battery.ttl"/>
     <uri name="https://w3id.org/emmo/domain/chemical-substance" uri="imports/chemical-substance.ttl"/>
+    <uri name="https://w3id.org/emmo/domain/electrochemistry" uri="imports/electrochemistry.ttl"/>
     <uri name="https://w3id.org/battinfo" uri="imports/battinfo.ttl"/>
     <uri name="https://w3id.org/emmo/domain/battery/0.13.0-beta/battery" uri="imports/battery.ttl"/>
 </catalog>
