@@ -60,6 +60,14 @@ class URIScheme:
         return f"{cls.BASE_RESOURCE}property/{cls.sanitize_id(material_id)}/{cls.sanitize_id(prop_name)}"
 
     @classmethod
+    def bond_uri(cls, material_id: str, src_site_idx: int, tgt_site_idx: int) -> str:
+        return f"{cls.BASE_RESOURCE}bond/{cls.sanitize_id(material_id)}/{src_site_idx}_{tgt_site_idx}"
+
+    @classmethod
+    def batterycell_uri(cls, material_id: str) -> str:
+        return f"{cls.BASE_RESOURCE}batterycell/{cls.sanitize_id(material_id)}"
+
+    @classmethod
     def battgpt_pred(cls, pred_name: str) -> str:
         return f"{cls.BASE_NS}{pred_name}"
 
@@ -70,7 +78,6 @@ class PipelineConfig:
     mp_api_key: str | None = field(default_factory=lambda: os.getenv("MP_API_KEY"))
     use_offline_fallback: bool = True
     output_dir: Path = field(default_factory=lambda: Path(__file__).parents[2] / "output")
-    validation_dir: Path = field(default_factory=lambda: Path(__file__).parents[2] / "validation")
     sample_materials: list[str] = field(default_factory=lambda: [
         "mp-22526",   # LiCoO2 (Cathode)  — verified vs MP API (R-3m, #166)
         "mp-19017",   # LiFePO4 (Cathode) — verified vs MP API (Pnma, #62)
@@ -85,7 +92,18 @@ class PipelineConfig:
         "mp-776557",  # Na3V2(PO4)3 (NASICON Na Cathode) — verified vs MP API (C2/c, #15)
         "mp-1143"     # Al2O3 (Separator coating / insulating ceramic) — verified vs MP API (R-3c, #167)
     ])
+    cathode_test_materials: list[str] = field(default_factory=lambda: [
+        "mp-22526",   # LiCoO2 — LayeredOxideStructure (R-3m, #166)
+        "mp-19017",   # LiFePO4 — OlivineStructure (Pnma, #62)
+        "mp-25411",   # LiNiO2 — LayeredOxideStructure (R-3m, #166)
+        "mp-22584",   # LiMn2O4 — SpinelStructure (Fd-3m, #227)
+        "mp-19226",   # NaFePO4 — OlivineStructure (Pnma, #62)
+        "mp-776557",  # Na3V2(PO4)3 — NASICONStructure
+        "mp-18997",   # LiMnPO4 — OlivineStructure (Pnma, #62)
+        "mp-18957",   # NaMnO2 — LayeredOxideStructure (C2/m, #12)
+        "mp-19149",   # NaNiO2 — LayeredOxideStructure (C2/m, #12)
+        "mp-6396",    # Li3V2(PO4)3 — NASICONStructure (P2_1/c, #14)
+    ])
 
     def __post_init__(self):
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.validation_dir.mkdir(parents=True, exist_ok=True)

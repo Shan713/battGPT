@@ -8,7 +8,7 @@ from .triple_generator import TripleGenerator
 logger = logging.getLogger(__name__)
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-SCHEMA_FILE = ROOT_DIR / "rdf_schema.ttl"
+SCHEMA_FILE = ROOT_DIR / "BattGpt-Ontology" / "battgpt_v0.3.0.ttl"
 
 class RDFBuilder:
     """Master RDF Graph Construction Manager binding Stage 1 namespaces and generating triples."""
@@ -22,53 +22,51 @@ class RDFBuilder:
         """Bind all Stage 1 namespace prefixes into the RDF Graph."""
         self.graph.bind("emmo", Namespace("https://w3id.org/emmo#"))
         self.graph.bind("chsub", Namespace("https://w3id.org/emmo/domain/chemical-substance#"))
-        self.graph.bind("elchem", Namespace("https://w3id.org/emmo/domain/electrochemistry#"))
         self.graph.bind("battery", Namespace("https://w3id.org/emmo/domain/battery#"))
         self.graph.bind("cryst", Namespace("https://w3id.org/emmo/domain/crystallography#"))
         self.graph.bind("battinfo", Namespace("https://w3id.org/battinfo#"))
         self.graph.bind("battgpt", Namespace("https://w3id.org/battgpt/kg#"))
-        self.graph.bind("qudt", Namespace("http://qudt.org/schema/qudt/"))
         self.graph.bind("unit", Namespace("http://qudt.org/vocab/unit/"))
         self.graph.bind("prov", Namespace("http://www.w3.org/ns/prov#"))
         self.graph.bind("dcterms", Namespace("http://purl.org/dc/terms/"))
-        self.graph.bind("skos", Namespace("http://www.w3.org/2004/02/skos/core#"))
         self.graph.bind("rdfs", RDFS)
         self.graph.bind("rdf", RDF)
         self.graph.bind("owl", OWL)
         self.graph.bind("xsd", XSD)
 
     def _add_ontology_header_and_schema(self):
-        """Add owl:Ontology header, owl:imports, and embed predicate declarations from rdf_schema.ttl."""
-        ont_uri = URIRef("https://w3id.org/battgpt/kg")
-        self.graph.add((ont_uri, RDF.type, OWL.Ontology))
-        self.graph.add((ont_uri, RDFS.label, Literal("BattGPT Battery Materials Knowledge Graph", lang="en")))
-        self.graph.add((ont_uri, OWL.versionInfo, Literal("0.1.0", datatype=XSD.string)))
+        """Merge the ontology header, owl:imports, and predicate/class declarations directly from
+        BattGpt-Ontology/battgpt_v0.3.0.ttl, so the exported KG always reflects whatever version of
+        the ontology that file actually holds (version IRI, imports, and all) instead of a
+        hand-duplicated copy that can silently drift out of sync with it."""
+        if not SCHEMA_FILE.exists():
+            raise FileNotFoundError(
+                f"Ontology schema file not found at {SCHEMA_FILE}. The exported KG would be built "
+                f"against an undeclared, unversioned battgpt: vocabulary without it."
+            )
+        schema_g = Graph()
+        schema_g.parse(str(SCHEMA_FILE), format="turtle")
+        for triple in schema_g:
+            self.graph.add(triple)
 
-        # Add owl:imports
-        imports = [
-            URIRef("https://w3id.org/emmo#"),
-            URIRef("https://w3id.org/emmo/domain/battery#"),
-            URIRef("https://w3id.org/emmo/domain/crystallography#"),
-            URIRef("https://w3id.org/emmo/domain/chemical-substance#"),
-            URIRef("http://qudt.org/schema/qudt/"),
-            URIRef("http://www.w3.org/ns/prov#"),
-            URIRef("http://purl.org/dc/terms/")
-        ]
-        for imp in imports:
-            self.graph.add((ont_uri, OWL.imports, imp))
-
-        # Merge predicate declarations from rdf_schema.ttl so graph is self-contained
-        if SCHEMA_FILE.exists():
-            schema_g = Graph()
-            schema_g.parse(str(SCHEMA_FILE), format="turtle")
-            for triple in schema_g:
+        # Merge local EMMO 1.0.3 inferred ontology closure for complete hierarchy and UUID triples
+        cache_dir = Path(__file__).resolve().parent / "ontology_cache"
+        emmo_cache = cache_dir / "emmo_1.0.3_inferred.ttl"
+        if emmo_cache.exists():
+            logger.info(f"Loading local EMMO ontology closure from {emmo_cache}...")
+            emmo_g = Graph()
+            emmo_g.parse(str(emmo_cache), format="turtle")
+            for triple in emmo_g:
                 self.graph.add(triple)
+            logger.info(f"Merged EMMO ontology closure ({len(emmo_g):,} triples). Total graph triples now: {len(self.graph):,}")
 
     def build_graph(self, records: list[MaterialRecord]) -> Graph:
         """Construct knowledge graph from a list of enriched MaterialRecords."""
         logger.info(f"Building RDF Knowledge Graph for {len(records)} material records...")
         self._add_ontology_header_and_schema()
-        for rec in records:
+        for idx, rec in enumerate(records):
             self.generator.generate_triples(rec, self.graph)
-        logger.info(f"RDF Graph construction complete. Total triples: {len(self.graph)}")
+            if (idx + 1) % 1000 == 0 or (idx + 1) == len(records):
+                logger.info(f"Generated RDF triples for {idx + 1}/{len(records)} material records. Current graph triples: {len(self.graph):,}")
+        logger.info(f"RDF Graph construction complete. Total triples: {len(self.graph):,}")
         return self.graph

@@ -22,7 +22,7 @@ class MPIngester:
         if self._cached_dataset is None:
             if CACHE_FILE.exists():
                 self._cached_dataset = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-                logger.info(f"Loaded authentic cached MP dataset from {CACHE_FILE}")
+                logger.info(f"Loaded authentic cached MP dataset with {len(self._cached_dataset)} materials from {CACHE_FILE}")
             else:
                 logger.warning(f"Cache file {CACHE_FILE} not found. Operating with empty cache.")
                 self._cached_dataset = {}
@@ -60,6 +60,11 @@ class MPIngester:
                 logger.error(f"Error ingesting material {mid}: {e}")
         return records
 
+    def ingest_all_cached(self) -> list[MaterialRecord]:
+        """Ingest all materials present in the authentic cache snapshot."""
+        cache = self._load_cache()
+        return self.ingest_batch(list(cache.keys()))
+
     def _fetch_from_mp_api(self, material_id: str) -> MaterialRecord:
         """Live API call via mp-api."""
         from mp_api.client import MPRester
@@ -81,6 +86,24 @@ class MPIngester:
                 )
                 for i, site in enumerate(struct.sites)
             ]
+
+            # Parse elastic moduli
+            k_vrh = None
+            if hasattr(doc, "bulk_modulus") and doc.bulk_modulus is not None:
+                if isinstance(doc.bulk_modulus, dict):
+                    k_vrh = doc.bulk_modulus.get("vrh")
+                elif isinstance(doc.bulk_modulus, (int, float)):
+                    k_vrh = float(doc.bulk_modulus)
+
+            g_vrh = None
+            if hasattr(doc, "shear_modulus") and doc.shear_modulus is not None:
+                if isinstance(doc.shear_modulus, dict):
+                    g_vrh = doc.shear_modulus.get("vrh")
+                elif isinstance(doc.shear_modulus, (int, float)):
+                    g_vrh = float(doc.shear_modulus)
+
+            poisson = getattr(doc, "homogeneous_poisson", getattr(doc, "poisson_ratio", None))
+
             return MaterialRecord(
                 material_id=doc.material_id.string if hasattr(doc.material_id, 'string') else str(doc.material_id),
                 formula=doc.formula_pretty,
@@ -90,13 +113,26 @@ class MPIngester:
                 symmetry_symbol=doc.symmetry.symbol if doc.symmetry else "P1",
                 spacegroup_number=doc.symmetry.number if doc.symmetry else 1,
                 crystal_system=doc.symmetry.crystal_system.name if doc.symmetry else "Triclinic",
-                band_gap=float(doc.band_gap),
-                formation_energy_per_atom=float(doc.formation_energy_per_atom),
-                energy_above_hull=float(doc.energy_above_hull),
-                density=float(doc.density),
-                volume=float(doc.volume),
-                is_stable=bool(doc.is_stable),
-                e_fermi=float(doc.e_fermi) if doc.e_fermi else None,
+                band_gap=float(doc.band_gap) if doc.band_gap is not None else 0.0,
+                formation_energy_per_atom=float(doc.formation_energy_per_atom) if doc.formation_energy_per_atom is not None else 0.0,
+                energy_above_hull=float(doc.energy_above_hull) if doc.energy_above_hull is not None else 0.0,
+                density=float(doc.density) if doc.density is not None else 0.0,
+                volume=float(doc.volume) if doc.volume is not None else 0.0,
+                is_stable=bool(doc.is_stable) if doc.is_stable is not None else False,
+                e_fermi=float(doc.efermi) if getattr(doc, "efermi", None) is not None else getattr(doc, "e_fermi", None),
+                magnetic_ordering=str(doc.ordering) if getattr(doc, "ordering", None) else None,
+                total_magnetization=float(doc.total_magnetization) if getattr(doc, "total_magnetization", None) is not None else None,
+                is_metal=bool(doc.is_metal) if getattr(doc, "is_metal", None) is not None else None,
+                is_gap_direct=bool(doc.is_gap_direct) if getattr(doc, "is_gap_direct", None) is not None else None,
+                elastic_k_vrh=float(k_vrh) if k_vrh is not None else None,
+                elastic_g_vrh=float(g_vrh) if g_vrh is not None else None,
+                universal_anisotropy=float(doc.universal_anisotropy) if getattr(doc, "universal_anisotropy", None) is not None else None,
+                poisson_ratio=float(poisson) if poisson is not None else None,
+                num_sites=int(doc.nsites) if getattr(doc, "nsites", None) is not None else len(struct),
+                chemsys=str(doc.chemsys) if getattr(doc, "chemsys", None) else "",
+                point_group=str(getattr(doc.symmetry, "point_group", "")) if doc.symmetry else "",
+                is_theoretical=bool(doc.theoretical) if getattr(doc, "theoretical", None) is not None else None,
+                task_ids=[str(t) for t in doc.task_ids] if getattr(doc, "task_ids", None) else [str(doc.material_id)],
                 lattice_a=float(struct.lattice.a),
                 lattice_b=float(struct.lattice.b),
                 lattice_c=float(struct.lattice.c),
@@ -112,13 +148,7 @@ class MPIngester:
             )
 
     def _fetch_from_offline_cache(self, material_id: str) -> MaterialRecord:
-        """Load from authentic cached dataset (built from live MP API responses).
-
-        Accepts the Stage 2.2 authentic cache schema (keys: formula_pretty,
-        spacegroup_symbol, ordering, efermi, bulk_modulus, ...) and, for
-        backward compatibility, the legacy synthetic schema (formula,
-        symmetry_symbol, magnetic_ordering, e_fermi, elastic_k_vrh).
-        """
+        """Load from authentic cached dataset snapshot."""
         cache = self._load_cache()
         data = cache.get(material_id)
         if not data:
@@ -150,8 +180,15 @@ class MPIngester:
                 ))
 
         lat_info = struct_dict.get("lattice", {}) if struct_dict else {}
-        bulk_mod = data.get("bulk_modulus") or {}
-        k_vrh = data.get("elastic_k_vrh") or bulk_mod.get("vrh")
+        bulk_mod = data.get("bulk_modulus")
+        if isinstance(bulk_mod, dict):
+            bulk_mod = bulk_mod.get("vrh")
+        shear_mod = data.get("shear_modulus")
+        if isinstance(shear_mod, dict):
+            shear_mod = shear_mod.get("vrh")
+
+        k_vrh = bulk_mod if bulk_mod is not None else data.get("elastic_k_vrh")
+        g_vrh = shear_mod if shear_mod is not None else data.get("elastic_g_vrh")
 
         return MaterialRecord(
             material_id=data["material_id"],
@@ -162,15 +199,33 @@ class MPIngester:
             symmetry_symbol=data.get("spacegroup_symbol") or data.get("symmetry_symbol", "P1"),
             spacegroup_number=data.get("spacegroup_number", 1),
             crystal_system=data.get("crystal_system", "Triclinic"),
-            band_gap=data.get("band_gap", 0.0),
-            formation_energy_per_atom=data.get("formation_energy_per_atom", 0.0),
-            energy_above_hull=data.get("energy_above_hull", 0.0),
-            density=data.get("density", 0.0),
-            volume=data.get("volume", 0.0),
-            is_stable=data.get("is_stable", False),
-            e_fermi=data.get("efermi") if data.get("efermi") is not None else data.get("e_fermi"),
+            band_gap=float(data.get("band_gap", 0.0)),
+            formation_energy_per_atom=float(data.get("formation_energy_per_atom", 0.0)),
+            energy_above_hull=float(data.get("energy_above_hull", 0.0)),
+            density=float(data.get("density", 0.0)),
+            volume=float(data.get("volume", 0.0)),
+            energy_per_atom=float(data["energy_per_atom"]) if data.get("energy_per_atom") is not None else None,
+            density_atomic=float(data["density_atomic"]) if data.get("density_atomic") is not None else None,
+            is_stable=bool(data.get("is_stable", False)),
+            e_fermi=float(data["efermi"]) if data.get("efermi") is not None else (float(data["e_fermi"]) if data.get("e_fermi") is not None else None),
             magnetic_ordering=data.get("ordering") or data.get("magnetic_ordering"),
-            elastic_k_vrh=k_vrh,
+            total_magnetization=float(data["total_magnetization"]) if data.get("total_magnetization") is not None else None,
+            total_magnetization_normalized_formula_units=float(data["total_magnetization_normalized_formula_units"]) if data.get("total_magnetization_normalized_formula_units") is not None else None,
+            total_magnetization_normalized_vol=float(data["total_magnetization_normalized_vol"]) if data.get("total_magnetization_normalized_vol") is not None else None,
+            is_metal=bool(data["is_metal"]) if data.get("is_metal") is not None else None,
+            is_gap_direct=bool(data["is_gap_direct"]) if data.get("is_gap_direct") is not None else None,
+            elastic_k_vrh=float(k_vrh) if k_vrh is not None else None,
+            elastic_g_vrh=float(g_vrh) if g_vrh is not None else None,
+            universal_anisotropy=float(data["universal_anisotropy"]) if data.get("universal_anisotropy") is not None else None,
+            poisson_ratio=float(data["poisson_ratio"]) if data.get("poisson_ratio") is not None else None,
+            num_sites=int(data["num_sites"]) if data.get("num_sites") is not None else len(sites),
+            nelements=int(data["nelements"]) if data.get("nelements") is not None else None,
+            num_magnetic_sites=int(data["num_magnetic_sites"]) if data.get("num_magnetic_sites") is not None else None,
+            num_unique_magnetic_sites=int(data["num_unique_magnetic_sites"]) if data.get("num_unique_magnetic_sites") is not None else None,
+            chemsys=data.get("chemsys", ""),
+            point_group=data.get("point_group", ""),
+            is_theoretical=bool(data["is_theoretical"]) if data.get("is_theoretical") is not None else None,
+            task_ids=data.get("task_ids", [data["material_id"]]),
             lattice_a=float(lat_info.get("a", 0.0)),
             lattice_b=float(lat_info.get("b", 0.0)),
             lattice_c=float(lat_info.get("c", 0.0)),

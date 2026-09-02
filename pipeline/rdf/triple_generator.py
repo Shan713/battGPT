@@ -1,11 +1,11 @@
-"""RDF Triple Emitter for MaterialRecord Entities with Provenance & Connectivity Graph."""
-from rdflib import Graph, URIRef, Literal, Namespace, RDF, RDFS, XSD
+"""RDF Triple Emitter for MaterialRecord Entities with Reified Bonds, Periodic Descriptors & Battery Role Individuals."""
+from rdflib import Graph, URIRef, Literal, Namespace, RDF, RDFS, XSD, OWL
 from ..models import MaterialRecord
+from ..models.element_data import get_element_physical_data
 from ..config import URIScheme
 
-# Defined Namespaces according to Stage 1 Specification
+# Defined Namespaces according to Stage 1, 2, 2.3.1 & 2.3.2 Specifications
 EMMO = Namespace("https://w3id.org/emmo#")
-CHSUB = Namespace("https://w3id.org/emmo/domain/chemical-substance#")
 BATTERY = Namespace("https://w3id.org/emmo/domain/battery#")
 CRYST = Namespace("https://w3id.org/emmo/domain/crystallography#")
 BATTGPT = Namespace("https://w3id.org/battgpt/kg#")
@@ -18,9 +18,39 @@ EMMO_PROPERTY_CLASS = EMMO.EMMO_b7bcff25_ffc3_474e_9ab5_01b1664bd4ba  # owl:Clas
 EMMO_HAS_PROPERTY = EMMO.EMMO_e1097637_70d2_4895_973f_2396f04fa204    # owl:ObjectProperty hasProperty
 EMMO_HAS_VALUE = EMMO.EMMO_faf79f53_749d_40b2_807c_d34244c192f4       # owl:DatatypeProperty hasNumberValue
 EMMO_HAS_UNIT = EMMO.EMMO_bed1d005_b04e_4a90_94cf_02bc678a8569        # owl:ObjectProperty hasMeasurementUnit
+EMMO_CHEMICAL_SUBSTANCE = EMMO.EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea  # owl:Class ChemicalSubstance (battgpt: material domain/range)
+EMMO_CHEMICAL_ELEMENT = EMMO.EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf   # owl:Class ChemicalElement (battgpt: element domain/range)
+
+ROLE_INDIVIDUAL_MAP = {
+    "PositiveElectrode": BATTGPT.PositiveElectrodeRoleIndividual,
+    "NegativeElectrode": BATTGPT.NegativeElectrodeRoleIndividual,
+    "Electrolyte": BATTGPT.ElectrolyteRoleIndividual,
+    "Separator": BATTGPT.SeparatorRoleIndividual,
+}
+
+# belongsToElectrode's range was tightened in v0.3.0 to owl:unionOf(PositiveElectrodeRole,
+# NegativeElectrodeRole); Electrolyte/SeparatorRole materials are still linked via usesMaterial
+# (its inverse, left general over all four BatteryRole subclasses) but must not use belongsToElectrode.
+BELONGS_TO_ELECTRODE_ROLES = {"PositiveElectrode", "NegativeElectrode"}
+
+STRUCTURE_FAMILY_INDIVIDUAL_MAP = {
+    "LayeredOxideStructure": BATTGPT.LayeredOxideStructureIndividual,
+    "SpinelStructure": BATTGPT.SpinelStructureIndividual,
+    "RockSaltStructure": BATTGPT.RockSaltStructureIndividual,
+    "OlivineStructure": BATTGPT.OlivineStructureIndividual,
+    "NASICONStructure": BATTGPT.NASICONStructureIndividual,
+    "GarnetStructure": BATTGPT.GarnetStructureIndividual,
+    "PerovskiteStructure": BATTGPT.PerovskiteStructureIndividual,
+    "LGPSTypeStructure": BATTGPT.LGPSTypeStructureIndividual,
+    "ArgyroditeStructure": BATTGPT.ArgyroditeStructureIndividual,
+}
+
+# battery:BatteryCell, reused (not redefined) from EMMO domain-battery.
+BATTERY_CELL_CLASS = BATTERY.battery_68ed592a_7924_45d0_a108_94d6275d57f0
+
 
 class TripleGenerator:
-    """Generates RDF triples for a single MaterialRecord using Stage 1 schema rules."""
+    """Generates RDF triples for a MaterialRecord entity using Stage 2.3.2 schema rules."""
 
     def generate_triples(self, record: MaterialRecord, graph: Graph):
         """Emit all RDF triples for a MaterialRecord into an rdflib Graph."""
@@ -33,58 +63,74 @@ class TripleGenerator:
         mp_prov = record.provenance_map.get("material_id", "Materials Project API / Cache")
 
         # ── 1. Material Node ──
-        graph.add((mat_uri, RDF.type, CHSUB.Substance))
+        graph.add((mat_uri, RDF.type, EMMO_CHEMICAL_SUBSTANCE))
         graph.add((mat_uri, RDFS.label, Literal(f"Material {record.formula} ({record.material_id})", lang="en")))
         graph.add((mat_uri, BATTGPT.hasFormula, Literal(record.formula, datatype=XSD.string)))
         graph.add((mat_uri, BATTGPT.hasMaterialProjectId, Literal(record.material_id, datatype=XSD.string)))
         graph.add((mat_uri, BATTGPT.isStable, Literal(record.is_stable, datatype=XSD.boolean)))
+        if record.is_metal is not None:
+            graph.add((mat_uri, BATTGPT.isMetal, Literal(record.is_metal, datatype=XSD.boolean)))
+        if record.is_gap_direct is not None:
+            graph.add((mat_uri, BATTGPT.isGapDirect, Literal(record.is_gap_direct, datatype=XSD.boolean)))
+        if record.chemsys:
+            graph.add((mat_uri, BATTGPT.hasChemsys, Literal(record.chemsys, datatype=XSD.string)))
+        if record.is_theoretical is not None:
+            graph.add((mat_uri, BATTGPT.isTheoretical, Literal(record.is_theoretical, datatype=XSD.boolean)))
+
         graph.add((mat_uri, BATTGPT.hasStructure, cryst_uri))
         graph.add((mat_uri, DCTERMS.source, Literal(mp_prov, datatype=XSD.string)))
 
         # ── 2. Crystal Node ──
-        graph.add((cryst_uri, RDF.type, CRYST.Crystal))
+        graph.add((cryst_uri, RDF.type, BATTGPT.CrystalStructure))
         graph.add((cryst_uri, RDFS.label, Literal(f"Crystal structure of {record.formula}", lang="en")))
         graph.add((cryst_uri, BATTGPT.hasMaterialProjectId, Literal(record.material_id, datatype=XSD.string)))
         graph.add((cryst_uri, BATTGPT.hasUnitCell, uc_uri))
         graph.add((cryst_uri, BATTGPT.hasSpaceGroup, sg_uri))
         graph.add((cryst_uri, BATTGPT.hasCrystalSystem, cs_uri))
         graph.add((cryst_uri, DCTERMS.source, Literal(mp_prov, datatype=XSD.string)))
+        if record.point_group:
+            graph.add((cryst_uri, BATTGPT.hasPointGroup, Literal(record.point_group, datatype=XSD.string)))
         if record.cif:
             graph.add((cryst_uri, BATTGPT.hasCif, Literal(record.cif, datatype=XSD.string)))
+        if record.structure_family and record.structure_family in STRUCTURE_FAMILY_INDIVIDUAL_MAP:
+            family_ind_uri = STRUCTURE_FAMILY_INDIVIDUAL_MAP[record.structure_family]
+            graph.add((cryst_uri, BATTGPT.hasStructureFamily, family_ind_uri))
+            if record.structure_family_evidence:
+                graph.add((cryst_uri, RDFS.comment, Literal(f"StructureFamily Evidence: {record.structure_family_evidence}", lang="en")))
 
         # ── 3. UnitCell Node ──
-        graph.add((uc_uri, RDF.type, CRYST.UnitCell))
+        graph.add((uc_uri, RDF.type, BATTGPT.UnitCell))
         graph.add((uc_uri, RDFS.label, Literal(f"Unit cell of {record.material_id}", lang="en")))
-        graph.add((uc_uri, BATTGPT.hasLatticea, Literal(record.lattice_a, datatype=XSD.double)))
-        graph.add((uc_uri, BATTGPT.hasLatticeb, Literal(record.lattice_b, datatype=XSD.double)))
-        graph.add((uc_uri, BATTGPT.hasLatticec, Literal(record.lattice_c, datatype=XSD.double)))
+        graph.add((uc_uri, BATTGPT.hasLatticeA, Literal(record.lattice_a, datatype=XSD.double)))
+        graph.add((uc_uri, BATTGPT.hasLatticeB, Literal(record.lattice_b, datatype=XSD.double)))
+        graph.add((uc_uri, BATTGPT.hasLatticeC, Literal(record.lattice_c, datatype=XSD.double)))
         graph.add((uc_uri, BATTGPT.hasAlpha, Literal(record.alpha, datatype=XSD.double)))
         graph.add((uc_uri, BATTGPT.hasBeta, Literal(record.beta, datatype=XSD.double)))
         graph.add((uc_uri, BATTGPT.hasGamma, Literal(record.gamma, datatype=XSD.double)))
         graph.add((uc_uri, PROV.wasGeneratedBy, Literal(record.provenance_map.get("lattice", "Pymatgen"), datatype=XSD.string)))
 
         # ── 4. SpaceGroup Node ──
-        graph.add((sg_uri, RDF.type, CRYST.SpaceGroup))
+        graph.add((sg_uri, RDF.type, BATTGPT.SpaceGroup))
         graph.add((sg_uri, RDFS.label, Literal(f"Space Group {record.symmetry_symbol} ({record.spacegroup_number})", lang="en")))
         graph.add((sg_uri, BATTGPT.hasSymmetrySymbol, Literal(record.symmetry_symbol, datatype=XSD.string)))
         graph.add((sg_uri, BATTGPT.hasSpaceGroupNumber, Literal(record.spacegroup_number, datatype=XSD.integer)))
         graph.add((sg_uri, PROV.wasGeneratedBy, Literal(record.provenance_map.get("symmetry", "Pymatgen"), datatype=XSD.string)))
 
         # ── 5. CrystalSystem Node ──
-        graph.add((cs_uri, RDF.type, CRYST.CrystalSystem))
+        graph.add((cs_uri, RDF.type, BATTGPT.CrystalSystem))
         graph.add((cs_uri, RDFS.label, Literal(record.crystal_system, lang="en")))
 
-        # ── 6. Atomic Sites, Species & Crystal Connectivity Graph Edges ──
+        # ── 6. Atomic Sites, Species, Elements & Reified Crystal Bonds ──
         for site in record.sites:
             site_uri = URIRef(URIScheme.site_uri(record.material_id, site.index))
             sp_uri = URIRef(URIScheme.species_uri(site.element_symbol, site.oxidation_state))
             elem_uri = URIRef(URIScheme.element_uri(site.element_symbol))
 
             # Connect UnitCell -> Site
-            graph.add((uc_uri, BATTGPT.containsSite, site_uri))
+            graph.add((uc_uri, BATTGPT.hasSite, site_uri))
 
             # Site Node
-            graph.add((site_uri, RDF.type, CRYST.AtomicSite))
+            graph.add((site_uri, RDF.type, BATTGPT.Site))
             graph.add((site_uri, RDFS.label, Literal(f"Site {site.index} ({site.element_symbol}) in {record.material_id}", lang="en")))
             graph.add((site_uri, BATTGPT.hasFractionalX, Literal(site.fractional_x, datatype=XSD.double)))
             graph.add((site_uri, BATTGPT.hasFractionalY, Literal(site.fractional_y, datatype=XSD.double)))
@@ -92,40 +138,56 @@ class TripleGenerator:
             graph.add((site_uri, PROV.wasGeneratedBy, Literal(site.provenance, datatype=XSD.string)))
 
             # Connect Site -> Species
-            graph.add((site_uri, BATTGPT.containsSpecies, sp_uri))
+            graph.add((site_uri, BATTGPT.hasSpecies, sp_uri))
 
             # Species Node
-            graph.add((sp_uri, RDF.type, CHSUB.AtomicSpecies))
+            graph.add((sp_uri, RDF.type, BATTGPT.Species))
             graph.add((sp_uri, RDFS.label, Literal(site.species_symbol, lang="en")))
             if site.oxidation_state is not None:
                 graph.add((sp_uri, BATTGPT.hasOxidationState, Literal(int(site.oxidation_state), datatype=XSD.integer)))
             graph.add((sp_uri, BATTGPT.hasElement, elem_uri))
 
-            # Element Node
-            graph.add((elem_uri, RDF.type, CHSUB.Element))
+            # Element Node (Augmented with Periodic Table Descriptors)
+            graph.add((elem_uri, RDF.type, EMMO_CHEMICAL_ELEMENT))
             graph.add((elem_uri, RDFS.label, Literal(site.element_symbol, lang="en")))
-            en = record.electronegativity_map.get(site.element_symbol)
-            if en is not None:
-                graph.add((elem_uri, BATTGPT.hasElectronegativity, Literal(en, datatype=XSD.double)))
-                graph.add((elem_uri, PROV.wasGeneratedBy, Literal(record.provenance_map.get("smact", "SMACT 4.0"), datatype=XSD.string)))
+            
+            el_data = get_element_physical_data(site.element_symbol)
+            graph.add((elem_uri, BATTGPT.hasAtomicMass, Literal(el_data.atomic_mass, datatype=XSD.double)))
+            graph.add((elem_uri, BATTGPT.hasGroup, Literal(el_data.group, datatype=XSD.integer)))
+            graph.add((elem_uri, BATTGPT.hasPeriod, Literal(el_data.period, datatype=XSD.integer)))
+            graph.add((elem_uri, BATTGPT.hasElectronegativity, Literal(el_data.electronegativity, datatype=XSD.double)))
+            graph.add((elem_uri, BATTGPT.hasCovalentRadius, Literal(el_data.covalent_radius, datatype=XSD.double)))
+            graph.add((elem_uri, BATTGPT.hasValenceElectrons, Literal(el_data.valence_electrons, datatype=XSD.integer)))
 
             # Coordination Geometry Property Node
             if site.coordination_geometry:
                 geom_prop_uri = URIRef(URIScheme.property_uri(record.material_id, f"site_{site.index}_coordination"))
                 graph.add((site_uri, BATTGPT.hasCoordinationGeometry, geom_prop_uri))
                 graph.add((site_uri, EMMO_HAS_PROPERTY, geom_prop_uri))
-                graph.add((geom_prop_uri, RDF.type, EMMO_PROPERTY_CLASS)) # emmo:Property
+                graph.add((geom_prop_uri, RDF.type, BATTGPT.CoordinationGeometry))
                 graph.add((geom_prop_uri, RDFS.label, Literal(site.coordination_geometry, lang="en")))
                 graph.add((geom_prop_uri, PROV.wasGeneratedBy, Literal(site.provenance, datatype=XSD.string)))
 
-            # ── Explicit Crystal Connectivity Graph Edges (Bonds) ──
+            # ── 6b. Reified Crystal Bond Entities & Direct Predicates ──
             for bond in site.neighbors:
                 target_site_uri = URIRef(URIScheme.site_uri(record.material_id, bond.target_site_index))
+                bond_uri = URIRef(URIScheme.bond_uri(record.material_id, site.index, bond.target_site_index))
+
+                # Reified CrystalBond Entity
+                graph.add((site_uri, BATTGPT.hasBond, bond_uri))
+                graph.add((bond_uri, RDF.type, BATTGPT.CrystalBond))
+                graph.add((bond_uri, RDFS.label, Literal(f"Bond from site {site.index} to site {bond.target_site_index} in {record.material_id}", lang="en")))
+                graph.add((bond_uri, BATTGPT.hasSourceSite, site_uri))
+                graph.add((bond_uri, BATTGPT.hasTargetSite, target_site_uri))
+                graph.add((bond_uri, BATTGPT.hasBondDistance, Literal(bond.distance_angstrom, datatype=XSD.double)))
+                graph.add((bond_uri, BATTGPT.hasCoordinationMethod, Literal(bond.coordination_method, datatype=XSD.string)))
+                graph.add((bond_uri, PROV.wasGeneratedBy, Literal(f"Pymatgen ({bond.coordination_method})", datatype=XSD.string)))
+
+                # Direct predicate attachment
                 graph.add((site_uri, BATTGPT.hasBondTo, target_site_uri))
                 graph.add((site_uri, BATTGPT.hasBondDistance, Literal(bond.distance_angstrom, datatype=XSD.double)))
-                graph.add((site_uri, PROV.wasGeneratedBy, Literal(f"Pymatgen ({bond.coordination_method})", datatype=XSD.string)))
 
-        # ── 7. Physical Properties ──
+        # ── 7. Physical & Elastic Properties ──
         for prop in record.get_properties():
             prop_uri = URIRef(URIScheme.property_uri(record.material_id, prop.name))
             unit_uri = URIRef(prop.unit_iri)
@@ -134,10 +196,21 @@ class TripleGenerator:
             graph.add((mat_uri, EMMO_HAS_PROPERTY, prop_uri))
 
             # Specific property predicate attachment
-            if prop.name in ("band_gap", "formation_energy_per_atom", "energy_above_hull"):
-                pred = getattr(BATTGPT, f"has{'BandGap' if prop.name == 'band_gap' else ('FormationEnergy' if prop.name == 'formation_energy_per_atom' else 'EnergyAboveHull')}")
-                graph.add((cryst_uri, pred, prop_uri))
-                graph.add((mat_uri, pred, prop_uri))
+            if prop.name == "band_gap":
+                graph.add((mat_uri, BATTGPT.hasBandGap, prop_uri))
+                graph.add((cryst_uri, BATTGPT.hasBandGap, prop_uri))
+            elif prop.name == "formation_energy_per_atom":
+                graph.add((mat_uri, BATTGPT.hasFormationEnergy, prop_uri))
+                graph.add((cryst_uri, BATTGPT.hasFormationEnergy, prop_uri))
+            elif prop.name == "energy_above_hull":
+                graph.add((mat_uri, BATTGPT.hasEnergyAboveHull, prop_uri))
+                graph.add((cryst_uri, BATTGPT.hasEnergyAboveHull, prop_uri))
+            elif prop.name == "bulk_modulus":
+                graph.add((mat_uri, BATTGPT.hasBulkModulus, prop_uri))
+                graph.add((cryst_uri, BATTGPT.hasBulkModulus, prop_uri))
+            elif prop.name == "shear_modulus":
+                graph.add((mat_uri, BATTGPT.hasShearModulus, prop_uri))
+                graph.add((cryst_uri, BATTGPT.hasShearModulus, prop_uri))
 
             # Property Entity (typed as emmo:Property)
             graph.add((prop_uri, RDF.type, EMMO_PROPERTY_CLASS))
@@ -145,15 +218,44 @@ class TripleGenerator:
             graph.add((prop_uri, EMMO_HAS_VALUE, Literal(prop.value, datatype=XSD.double)))
             graph.add((prop_uri, EMMO_HAS_UNIT, unit_uri))
             graph.add((prop_uri, PROV.wasGeneratedBy, Literal(prop.provenance, datatype=XSD.string)))
-
-            # Link unit to type without mutating shared vocabulary symbol literals
             graph.add((unit_uri, RDF.type, EMMO_HAS_UNIT))
 
-        # ── 8. Curated BattINFO Battery Role Annotation ──
-        if record.battery_role_iri:
-            role_type_uri = URIRef(record.battery_role_iri)
-            graph.add((mat_uri, BATTGPT.belongsToElectrode, role_type_uri))
-            graph.add((role_type_uri, BATTGPT.usesMaterial, mat_uri))
-            graph.add((mat_uri, PROV.wasGeneratedBy, Literal(record.provenance_map.get("battinfo", "BattINFO Curated Role Mapping"), datatype=XSD.string)))
+        # ── 8. Explicit Battery Role owl:NamedIndividual Annotation (Stage 2.3.2) ──
+        if record.battery_role and record.battery_role in ROLE_INDIVIDUAL_MAP:
+            role_ind_uri = ROLE_INDIVIDUAL_MAP[record.battery_role]
+            # belongsToElectrode's range is restricted (v0.3.0) to Positive/NegativeElectrodeRole only;
+            # usesMaterial (its inverse) stays general over all four BatteryRole subclasses.
+            if record.battery_role in BELONGS_TO_ELECTRODE_ROLES:
+                graph.add((mat_uri, BATTGPT.belongsToElectrode, role_ind_uri))
+            graph.add((role_ind_uri, BATTGPT.usesMaterial, mat_uri))
+            graph.add((mat_uri, PROV.wasGeneratedBy, Literal(record.provenance_map.get("battinfo", "BattINFO Role Mapping"), datatype=XSD.string)))
             if record.battery_role_evidence:
                 graph.add((mat_uri, RDFS.comment, Literal(f"BattINFO Role Evidence: {record.battery_role_evidence}", lang="en")))
+
+        # ── 9. Battery-Cell-Level Electrochemistry (v0.3.0), from real MP insertion-electrode data ──
+        if record.average_voltage is not None and record.capacity_grav is not None:
+            cell_uri = URIRef(URIScheme.batterycell_uri(record.material_id))
+            graph.add((cell_uri, RDF.type, BATTERY_CELL_CLASS))
+            graph.add((cell_uri, RDFS.label, Literal(
+                f"Battery cell using {record.formula} as {record.battery_role or 'electrode'} active material "
+                f"({record.working_ion}-ion)", lang="en")))
+            graph.add((cell_uri, DCTERMS.relation, mat_uri))
+            graph.add((mat_uri, DCTERMS.relation, cell_uri))
+
+            ocv_uri = URIRef(URIScheme.property_uri(record.material_id, "open_circuit_voltage"))
+            graph.add((cell_uri, EMMO_HAS_PROPERTY, ocv_uri))
+            graph.add((cell_uri, BATTGPT.hasOpenCircuitVoltage, ocv_uri))
+            graph.add((ocv_uri, RDF.type, EMMO_PROPERTY_CLASS))
+            graph.add((ocv_uri, RDFS.label, Literal(f"Open-circuit voltage of {record.material_id} cell", lang="en")))
+            graph.add((ocv_uri, EMMO_HAS_VALUE, Literal(record.average_voltage, datatype=XSD.double)))
+            graph.add((ocv_uri, EMMO_HAS_UNIT, URIRef("http://qudt.org/vocab/unit/V")))
+            graph.add((ocv_uri, PROV.wasGeneratedBy, Literal(record.electrode_evidence or "Materials Project insertion-electrode data", datatype=XSD.string)))
+
+            cap_uri = URIRef(URIScheme.property_uri(record.material_id, "specific_capacity"))
+            graph.add((cell_uri, EMMO_HAS_PROPERTY, cap_uri))
+            graph.add((cell_uri, BATTGPT.hasSpecificCapacity, cap_uri))
+            graph.add((cap_uri, RDF.type, EMMO_PROPERTY_CLASS))
+            graph.add((cap_uri, RDFS.label, Literal(f"Gravimetric specific capacity of {record.material_id} cell", lang="en")))
+            graph.add((cap_uri, EMMO_HAS_VALUE, Literal(record.capacity_grav, datatype=XSD.double)))
+            graph.add((cap_uri, EMMO_HAS_UNIT, URIRef("http://qudt.org/vocab/unit/MilliA-HR-PER-GM")))
+            graph.add((cap_uri, PROV.wasGeneratedBy, Literal(record.electrode_evidence or "Materials Project insertion-electrode data", datatype=XSD.string)))

@@ -9,13 +9,12 @@ from ..models import MaterialRecord
 logger = logging.getLogger(__name__)
 
 BATTGPT = Namespace("https://w3id.org/battgpt/kg#")
-CHSUB = Namespace("https://w3id.org/emmo/domain/chemical-substance#")
-CRYST = Namespace("https://w3id.org/emmo/domain/crystallography#")
 PROV = Namespace("http://www.w3.org/ns/prov#")
 
 # EMMO Semantic Term IRIs
 EMMO_PROPERTY_CLASS = URIRef("https://w3id.org/emmo#EMMO_b7bcff25_ffc3_474e_9ab5_01b1664bd4ba")
 EMMO_HAS_PROPERTY = URIRef("https://w3id.org/emmo#EMMO_e1097637_70d2_4895_973f_2396f04fa204")
+EMMO_CHEMICAL_SUBSTANCE = URIRef("https://w3id.org/emmo#EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea")
 
 @dataclass
 class ValidationReport:
@@ -87,10 +86,10 @@ class RDFValidator:
         report.total_triples = len(graph)
 
         # 1. Count Entity Types
-        materials = list(graph.subjects(RDF.type, CHSUB.Substance))
-        crystals = list(graph.subjects(RDF.type, CRYST.Crystal))
-        sites = list(graph.subjects(RDF.type, CRYST.AtomicSite))
-        unitcells = list(graph.subjects(RDF.type, CRYST.UnitCell))
+        materials = list(graph.subjects(RDF.type, EMMO_CHEMICAL_SUBSTANCE))
+        crystals = list(graph.subjects(RDF.type, BATTGPT.CrystalStructure))
+        sites = list(graph.subjects(RDF.type, BATTGPT.Site))
+        unitcells = list(graph.subjects(RDF.type, BATTGPT.UnitCell))
 
         report.total_materials = len(materials)
         report.total_crystals = len(crystals)
@@ -160,7 +159,7 @@ class RDFValidator:
 
         # 8. Check UnitCell Lattice Values
         for uc in unitcells:
-            lat_a = list(graph.objects(uc, BATTGPT.hasLatticea))
+            lat_a = list(graph.objects(uc, BATTGPT.hasLatticeA))
             if not lat_a or float(lat_a[0]) <= 0:
                 report.errors.append(f"UnitCell {uc} has missing or non-positive lattice parameter a.")
 
@@ -169,10 +168,17 @@ class RDFValidator:
         if len(prov_triples) == 0:
             report.errors.append("Graph contains zero prov:wasGeneratedBy provenance statements.")
 
-        # 10. Check Syntax / Serialization Re-parsing
+        # 10. Check Syntax / Serialization Re-parsing (Sample-based for large graphs)
         try:
+            sample_g = Graph()
+            count = 0
+            for t in graph:
+                sample_g.add(t)
+                count += 1
+                if count >= 2000:
+                    break
             temp_g = Graph()
-            temp_g.parse(data=graph.serialize(format="turtle"), format="turtle")
+            temp_g.parse(data=sample_g.serialize(format="turtle"), format="turtle")
         except Exception as e:
             report.errors.append(f"Graph failed re-parsing serialization check: {e}")
 

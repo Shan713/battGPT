@@ -1,0 +1,314 @@
+{
+  "mp-22526": {
+    "_meta": {
+      "source": "Materials Project API (live)",
+      "endpoint": "materials.insertion_electrodes.search",
+      "client": "mp-api",
+      "fetched_at_utc": "2026-09-01T16:28:55.995624+00:00",
+      "matched_material_id": "mp-22526"
+    },
+    "battery_formula": "Li0-1CoO2",
+    "working_ion": "Li",
+    "num_steps": 2,
+    "average_voltage": 3.789750783333332,
+    "capacity_grav": 273.8393889485439,
+    "capacity_vol": 1348.509465672717,
+    "energy_grav": 1037.7830387752654,
+    "energy_vol": 5110.5148038655925,
+    "framework_formula": "CoO2",
+    "max_voltage_step": 0.456347490000005,
+    "material_ids_in_electrode": [
+      "mp-25234",
+      "mp-1278455",
+      "mp-674388",
+      "mp-1282881",
+      "mp-1290247",
+      "mp-780322",
+      "mp-1045647",
+      "mp-752635",
+      "mp-1285961",
+      "mp-1232996",
+      "mp-1285136",
+      "mp-1273834",
+      "mp-552024",
+      "mp-1235745",
+      "mp-758539",
+      "mp-1303680",
+      "mp-1298652",
+      "mp-1312267",
+      "mp-1303299",
+      "mp-1045644",
+      "mp-1303525",
+      "mp-1302545",
+      "mp-850808",
+      "mp-22526"
+    ]
+  },
+  "mp-19017": {
+    "_meta": {
+      "source": "Materials Project API (live)",
+      "endpoint": "materials.insertion_electrodes.search",
+      "client": "mp-api",
+      "fetched_at_utc": "2026-09-01T16:28:56.500794+00:00",
+      "matched_material_id": "mp-19017"
+    },
+    "battery_formula": "Li0-1FePO4",
+    "working_ion": "Li",
+    "num_steps": 1,
+    "average_voltage": 3.499170160833334,
+    "capacity_grav": 169.89052558677983,
+    "capacity_vol": 589.6723353614005,
+    "energy_grav": 594.4758577415521,
+    "energy_vol": 2063.3638405655197,
+    "framework_formula": "FePO4",
+    "max_voltage_step": 0.0,
+    "material_ids_in_electrode": [
+      "mp-20361",
+      "mp-2234625",
+      "mp-632692",
+      "mp-19017"
+    ]
+  },
+  "mp-25411": {
+    "_meta": {
+      "source": "Materials Project API (live)",
+      "endpoint": "materials.insertion_electrodes.search",
+      "client": "mp-api",
+      "fetched_at_utc": "2026-09-01T16:28:56.964823+00:00",
+      "matched_material_id": "mp-25411"
+    },
+    "battery_formula": "Li0-1NiO2",
+    "working_ion": "Li",
+    "num_steps": 3,
+    "average_voltage": 3.9385746633333323,
+    "capacity_grav": 274.5119605355954,
+    "capacity_vol": 1285.5715001484302,
+    "energy_grav": 1081.1858525474554,
+    "energy_vol": 5063.31933838803,
+    "framework_formula": "NiO2",
+    "max_voltage_step": 0.360988349999992,
+    "material_ids_in_electrode": [
+      "mp-25210",
+      "mp-1045572",
+      "mp-694965",
+      "mp-1045516",
+      "mp-762391",
+      "mp-755972",
+      "mp-865631",
+      "mp-25411"
+    ]
+  },
+  "mp-22584": {
+    "_meta": {
+      "source": "Materials Project API (live)",
+      "endpoint": "materials.insertion_electrodes.search",
+      "client": "mp-api",
+      "fetched_at_utc": "2026-09-01T16:28:57.519727+00:00",
+      "matched_material_id": "mp-22584"
+    },
+    "battery_formula": "Li0-1.5MnO2",
+    "working_ion": "Li",
+    "num_steps": 4,
+    "average_voltage": 2.167213594999999,
+    "capacity_grav": 412.9728319268892,
+    "capacity_vol": 1570.2993431001657,
+    "energy_grav": 895.0003357176042,
+    "energy_vol": 3403.1740845862482,
+    "framework_formula": "MnO2",
+    "max_voltage_step": 2.3103124950000122,
+    "material_ids_in_electrode": [
+      "mp-25275",
+      "mp-775739",
+      "mp-694894",
+      "mp-1222484",
+      "mp-36240",
+      "mp-1232984",
+      "mp-752921",
+      "mp-1281247",
+      "mp-1195443",
+      "mp-35530",
+      "mp-758426",
+      "mp-1222562",
+      "mp-531650",
+      "mp-1272804",
+      "mp-757975",
+      "mp-22584",
+      "mp-754894",
+      "mp-1289284",
+      "mp-753028",
+      "mp-556415",
+      "mp-35929",
+      "mp-1274955",
+      "mp-756461",
+      "mp-691164",
+      "mp-33314",
+      "mp-673675"
+    ]
+  },
+  "mp-19226": {
+    "_meta": {
+      "source": "Materials Project API (live)",
+      "endpoint": "materials.insertion_electrodes.search",
+      "client": "mp-api",
+      "fetched_at_utc": "2026-09-01T16:28:58.241628+00:00",
+      "matched_material_id": "mp-19226"
+    },
+    "battery_formula": "Na0-1FePO4",
+    "working_ion": "Na",
+    "num_steps": 1,
+    "average_voltage": 3.072423191551724,
+    "capacity_grav": 154.2033123226646,
+    "capacity_vol": 551.7892419612288,
+    "energy_grav": 473.77783299424846,
+    "energy_vol": 1695.330063850425,
+    "framework_formula": "FePO4",
+    "max_voltage_step": 0.0,
+    "material_ids_in_electrode": [
+      "mp-776288",
+      "mp-19226"
+    ]
+  },
+  "mp-776557": {
+    "_meta": {
+      "source": "Materials Project API (live)",
+      "endpoint": "materials.insertion_electrodes.search",
+      "client": "mp-api",
+      "fetched_at_utc": "2026-09-01T16:28:58.690233+00:00",
+      "matched_material_id": "mp-776557"
+    },
+    "battery_formula": "Na0-3V2(PO4)3",
+    "working_ion": "Na",
+    "num_steps": 1,
+    "average_voltage": 3.348916998218388,
+    "capacity_grav": 176.415910700775,
+    "capacity_vol": 536.8537745706377,
+    "energy_grav": 590.8022421020027,
+    "energy_vol": 1797.8787312173115,
+    "framework_formula": "V2(PO4)3",
+    "max_voltage_step": 0.0,
+    "material_ids_in_electrode": [
+      "mp-26104",
+      "mp-26962",
+      "mp-776557"
+    ]
+  },
+  "mp-18997": {
+    "_meta": {
+      "source": "Materials Project API (live)",
+      "endpoint": "materials.insertion_electrodes.search",
+      "client": "mp-api",
+      "fetched_at_utc": "2026-09-01T16:28:59.270473+00:00",
+      "matched_material_id": "mp-18997"
+    },
+    "battery_formula": "Li0-1MnPO4",
+    "working_ion": "Li",
+    "num_steps": 1,
+    "average_voltage": 3.797607483333341,
+    "capacity_grav": 170.8728823723351,
+    "capacity_vol": 567.533481490145,
+    "energy_grav": 648.9081367959177,
+    "energy_vol": 2155.2693963491993,
+    "framework_formula": "MnPO4",
+    "max_voltage_step": 0.0,
+    "material_ids_in_electrode": [
+      "mp-26980",
+      "mp-753779",
+      "mp-1978995",
+      "mp-18997"
+    ]
+  },
+  "mp-18957": {
+    "_meta": {
+      "source": "Materials Project API (live)",
+      "endpoint": "materials.insertion_electrodes.search",
+      "client": "mp-api",
+      "fetched_at_utc": "2026-09-01T16:28:59.735373+00:00",
+      "matched_material_id": "mp-18957"
+    },
+    "battery_formula": "Na0-1MnO2",
+    "working_ion": "Na",
+    "num_steps": 2,
+    "average_voltage": 2.745589469051722,
+    "capacity_grav": 243.81248636564382,
+    "capacity_vol": 984.2654657299418,
+    "energy_grav": 669.4089949888283,
+    "energy_vol": 2702.3888974594174,
+    "framework_formula": "MnO2",
+    "max_voltage_step": 0.8364957700000031,
+    "material_ids_in_electrode": [
+      "mp-25424",
+      "mp-796077",
+      "mp-1016155",
+      "mp-18957",
+      "mp-578605"
+    ]
+  },
+  "mp-19149": {
+    "_meta": {
+      "source": "Materials Project API (live)",
+      "endpoint": "materials.insertion_electrodes.search",
+      "client": "mp-api",
+      "fetched_at_utc": "2026-09-01T16:29:00.206512+00:00",
+      "matched_material_id": "mp-19149"
+    },
+    "battery_formula": "Na0-1NiO2",
+    "working_ion": "Na",
+    "num_steps": 2,
+    "average_voltage": 3.298787669051722,
+    "capacity_grav": 235.758417232829,
+    "capacity_vol": 1084.358893914879,
+    "energy_grav": 777.7169596428074,
+    "energy_vol": 3577.0697480729677,
+    "framework_formula": "NiO2",
+    "max_voltage_step": 0.8853448128749931,
+    "material_ids_in_electrode": [
+      "mp-25210",
+      "mp-760267",
+      "mp-765844",
+      "mp-19149",
+      "mp-578611"
+    ]
+  },
+  "mp-6396": {
+    "_meta": {
+      "source": "Materials Project API (live)",
+      "endpoint": "materials.insertion_electrodes.search",
+      "client": "mp-api",
+      "fetched_at_utc": "2026-09-01T16:29:00.851554+00:00",
+      "matched_material_id": "mp-6396"
+    },
+    "battery_formula": "Li0-4V2(PO4)3",
+    "working_ion": "Li",
+    "num_steps": 5,
+    "average_voltage": 3.163282101458333,
+    "capacity_grav": 258.60103179451716,
+    "capacity_vol": 728.3421648312648,
+    "energy_grav": 818.0280152942536,
+    "energy_vol": 2303.951733748155,
+    "framework_formula": "V2(PO4)3",
+    "max_voltage_step": 1.741734812499998,
+    "material_ids_in_electrode": [
+      "mp-26124",
+      "mp-850007",
+      "mp-26123",
+      "mp-776244",
+      "mp-849421",
+      "mp-758869",
+      "mp-766682",
+      "mp-729675",
+      "mp-849317",
+      "mp-26957",
+      "mp-1199961",
+      "mp-759481",
+      "mp-849426",
+      "mp-771281",
+      "mp-849384",
+      "mp-6396",
+      "mp-643154",
+      "mp-759065",
+      "mp-757321",
+      "mp-1202865",
+      "mp-760234"
+    ]
+  }
+}

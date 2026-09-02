@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    <!--
+      Local import resolution for rdf_schema_refined.ttl / rdf_schema.ttl.
+
+      Points each owl:imports IRI at a local, offline snapshot in imports/,
+      so Protege (and any OWL API tool) resolves them without hitting the
+      network. These are the same snapshots used for the ROBOT + HermiT/ELK
+      reasoner validation earlier in this project.
+
+      The nested import inside battinfo.ttl targets a specific *versioned*
+      battery IRI (0.13.0-beta) rather than the unversioned one below; it is
+      mapped to the same local battery.ttl snapshot, since battinfo.ttl
+      itself is a tiny (47-line) aggregator ontology and BattGPT's own
+      classes are resolved through the direct, unversioned import.
+    -->
+    <uri name="https://w3id.org/emmo" uri="imports/emmo.ttl"/>
+    <uri name="https://w3id.org/emmo/domain/battery" uri="imports/battery.ttl"/>
+    <uri name="https://w3id.org/emmo/domain/chemical-substance" uri="imports/chemical-substance.ttl"/>
+    <uri name="https://w3id.org/battinfo" uri="imports/battinfo.ttl"/>
+    <uri name="https://w3id.org/emmo/domain/battery/0.13.0-beta/battery" uri="imports/battery.ttl"/>
+</catalog>

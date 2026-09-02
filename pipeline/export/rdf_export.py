@@ -1,6 +1,7 @@
 """Multi-format RDF Exporter."""
 import logging
 import math
+import os
 from pathlib import Path
 from rdflib import Graph, URIRef
 from rdflib.term import Literal
@@ -9,6 +10,19 @@ from rdflib.plugins.serializers.turtle import TurtleSerializer
 logger = logging.getLogger(__name__)
 
 _XSD_DOUBLE = URIRef("http://www.w3.org/2001/XMLSchema#double")
+
+# BattGpt-Ontology/imports/ holds local snapshots of every ontology battgpt.ttl imports. Each
+# exported KG declares the same owl:imports (see RDFBuilder), so a catalog mapping those IRIs to
+# these local files is written alongside it, letting Protege resolve them offline.
+_IMPORTS_DIR = Path(__file__).resolve().parents[2] / "BattGpt-Ontology" / "imports"
+_CATALOG_ENTRIES = [
+    ("https://w3id.org/emmo", "emmo.ttl"),
+    ("https://w3id.org/emmo/domain/battery", "battery.ttl"),
+    ("https://w3id.org/emmo/domain/chemical-substance", "chemical-substance.ttl"),
+    ("https://w3id.org/battinfo", "battinfo.ttl"),
+    # battinfo.ttl itself nests an import of this specific versioned battery IRI.
+    ("https://w3id.org/emmo/domain/battery/0.13.0-beta/battery", "battery.ttl"),
+]
 
 
 class _FullPrecisionTurtleSerializer(TurtleSerializer):
@@ -64,4 +78,26 @@ class RDFExporter:
         paths["jsonld"] = jsonld_path
         logger.info(f"Exported JSON-LD graph to {jsonld_path}")
 
+        self._write_catalog(output_dir)
+
         return paths
+
+    def _write_catalog(self, output_dir: Path):
+        """Write an OASIS XML catalog next to the exported KG mapping its owl:imports IRIs to the
+        local BattGpt-Ontology/imports/ snapshots, so Protege resolves them offline."""
+        if not _IMPORTS_DIR.exists():
+            logger.warning(f"BattGpt-Ontology/imports/ not found at {_IMPORTS_DIR}; skipping catalog generation.")
+            return
+
+        rel_imports_dir = os.path.relpath(_IMPORTS_DIR, output_dir)
+        lines = [
+            '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
+            '<catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">',
+        ]
+        for uri_name, filename in _CATALOG_ENTRIES:
+            lines.append(f'    <uri name="{uri_name}" uri="{rel_imports_dir}/{filename}"/>')
+        lines.append("</catalog>")
+
+        catalog_path = output_dir / "catalog-v001.xml"
+        catalog_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        logger.info(f"Wrote offline import catalog to {catalog_path}")

@@ -2,12 +2,12 @@
 BATTERY MATERIALS KNOWLEDGE GRAPH VALIDATION REPORT (Stage 2.2)
 ======================================================================
 Status: PASSED (VALID)
-Total Triples: 8848
-Total Material Entities: 12
-Total Crystal Structures: 12
-Total Atomic Sites: 350
-Total Connectivity Bonds: 1670
-Total Property Nodes: 426
+Total Triples: 77927
+Total Material Entities: 10
+Total Crystal Structures: 10
+Total Atomic Sites: 262
+Total Connectivity Bonds: 1072
+Total Property Nodes: 160
 
 Failed Pymatgen Materials: 0
 Failed SMACT Materials: 0

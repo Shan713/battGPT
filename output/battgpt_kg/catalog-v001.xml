@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    <uri name="https://w3id.org/emmo" uri="../../BattGpt-Ontology/imports/emmo.ttl"/>
+    <uri name="https://w3id.org/emmo/domain/battery" uri="../../BattGpt-Ontology/imports/battery.ttl"/>
+    <uri name="https://w3id.org/emmo/domain/chemical-substance" uri="../../BattGpt-Ontology/imports/chemical-substance.ttl"/>
+    <uri name="https://w3id.org/battinfo" uri="../../BattGpt-Ontology/imports/battinfo.ttl"/>
+    <uri name="https://w3id.org/emmo/domain/battery/0.13.0-beta/battery" uri="../../BattGpt-Ontology/imports/battery.ttl"/>
+</catalog>

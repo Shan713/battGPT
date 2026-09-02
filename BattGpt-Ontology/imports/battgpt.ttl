@@ -1,0 +1,744 @@
+@prefix : <https://w3id.org/battgpt/kg#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix emmo: <https://w3id.org/emmo#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+@prefix chsub: <https://w3id.org/emmo/domain/chemical-substance#> .
+@prefix battery: <https://w3id.org/emmo/domain/battery#> .
+@prefix battgpt: <https://w3id.org/battgpt/kg#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix battinfo: <https://w3id.org/battinfo#> .
+@base <https://w3id.org/battgpt/kg#> .
+
+<https://w3id.org/battgpt/kg#> rdf:type owl:Ontology ;
+                                owl:versionIRI <https://w3id.org/battgpt/kg/0.2.2/battgpt> ;
+                                owl:imports <https://w3id.org/battinfo> ,
+                                            <https://w3id.org/emmo> ,
+                                            <https://w3id.org/emmo/domain/battery> ,
+                                            <https://w3id.org/emmo/domain/chemical-substance> ;
+                                dcterms:created "2026-08-05T00:00:00Z"^^xsd:dateTime ;
+                                dcterms:creator "BattGPT Team"@en ;
+                                dcterms:description "Custom predicates, standards-compliant domain classes, and named role individuals for battery materials, crystallography, DFT properties, crystal connectivity, reified bond entities, and battery components."@en ;
+                                dcterms:isVersionOf <https://w3id.org/battgpt/kg#> ;
+                                dcterms:license <https://creativecommons.org/licenses/by/4.0/> ;
+                                dcterms:title "BattGPT Battery Materials Knowledge Graph Predicate & Extension Ontology"@en ;
+                                vann:preferredNamespacePrefix "battgpt" ;
+                                vann:preferredNamespaceUri "https://w3id.org/battgpt/kg#" ;
+                                rdfs:comment "Contains ObjectProperty, DatatypeProperty, SubClass, and NamedIndividual definitions extending EMMO and BattINFO."@en ;
+                                owl:priorVersion <https://w3id.org/battgpt/kg/0.2.1/battgpt> ;
+                                owl:versionInfo "0.2.2" .
+
+#################################################################
+#    Annotation properties
+#################################################################
+
+###  http://purl.org/dc/terms/isVersionOf
+dcterms:isVersionOf rdf:type owl:AnnotationProperty .
+
+
+###  http://www.w3.org/2004/02/skos/core#definition
+skos:definition rdf:type owl:AnnotationProperty .
+
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  https://w3id.org/battgpt/kg#belongsToElectrode
+battgpt:belongsToElectrode rdf:type owl:ObjectProperty ;
+                           owl:inverseOf battgpt:usesMaterial ;
+                           rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                           rdfs:range battgpt:BatteryRole ;
+                           rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                           rdfs:label "belongsToElectrode"@en ;
+                           skos:prefLabel "belongsToElectrode"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasSite
+battgpt:hasSite rdf:type owl:ObjectProperty ;
+                     rdfs:subPropertyOf emmo:EMMO_17e27c22_37e1_468c_9dd7_95e137f73e7f ;
+                     rdfs:domain battgpt:UnitCell ;
+                     rdfs:range battgpt:Site ;
+                     rdfs:comment "Relates a unit cell to an atomic coordinate site located within its bounds."@en ;
+                     rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                     rdfs:label "hasSite"@en ;
+                     skos:prefLabel "hasSite"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasSpecies
+battgpt:hasSpecies rdf:type owl:ObjectProperty ;
+                        rdfs:subPropertyOf emmo:EMMO_dba27ca1_33c9_4443_a912_1519ce4c39ec ;
+                        rdfs:domain battgpt:Site ;
+                        rdfs:range battgpt:Species ;
+                        rdfs:comment "Relates an atomic site to the chemical atomic species occupying that site."@en ;
+                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                        rdfs:label "hasSpecies"@en ;
+                        skos:prefLabel "hasSpecies"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasBandGap
+battgpt:hasBandGap rdf:type owl:ObjectProperty ;
+                   rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
+                   rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                   rdfs:range battgpt:BandGapProperty ;
+                   rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                   rdfs:label "hasBandGap"@en ;
+                   skos:prefLabel "hasBandGap"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasBond
+battgpt:hasBond rdf:type owl:ObjectProperty ;
+                rdfs:domain battgpt:Site ;
+                rdfs:range battgpt:CrystalBond ;
+                rdfs:comment "Relates an atomic site to a reified crystal bond entity."@en ;
+                rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                rdfs:label "hasBond"@en ;
+                skos:prefLabel "hasBond"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasBondTo
+battgpt:hasBondTo rdf:type owl:ObjectProperty ;
+                  rdfs:domain battgpt:Site ;
+                  rdfs:range battgpt:Site ;
+                  rdfs:comment "Directed crystal-connectivity edge from one atomic site to a bonded neighbour site."@en ;
+                  rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                  rdfs:label "hasBondTo"@en ;
+                  skos:prefLabel "hasBondTo"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasBulkModulus
+battgpt:hasBulkModulus rdf:type owl:ObjectProperty ;
+                       rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
+                       rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                       rdfs:range battgpt:BulkModulusProperty ;
+                       rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                       rdfs:label "hasBulkModulus"@en ;
+                       skos:prefLabel "hasBulkModulus"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasCoordinationGeometry
+battgpt:hasCoordinationGeometry rdf:type owl:ObjectProperty ;
+                                rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
+                                rdfs:domain battgpt:Site ;
+                                rdfs:range emmo:EMMO_b7bcff25_ffc3_474e_9ab5_01b1664bd4ba ;
+                                rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                rdfs:label "hasCoordinationGeometry"@en ;
+                                skos:prefLabel "hasCoordinationGeometry"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasCrystalSystem
+battgpt:hasCrystalSystem rdf:type owl:ObjectProperty ;
+                         rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
+                         rdfs:domain battgpt:CrystalStructure ;
+                         rdfs:range battgpt:CrystalSystem ;
+                         rdfs:comment "Relates a crystal structure to its crystal system family."@en ;
+                         rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                         rdfs:label "hasCrystalSystem"@en ;
+                         skos:prefLabel "hasCrystalSystem"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasElement
+battgpt:hasElement rdf:type owl:ObjectProperty ;
+                   rdfs:subPropertyOf emmo:EMMO_dba27ca1_33c9_4443_a912_1519ce4c39ec ;
+                   rdfs:domain battgpt:Species ;
+                   rdfs:range emmo:EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf ;
+                   rdfs:comment "Relates an atomic species to its fundamental periodic table element."@en ;
+                   rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                   rdfs:label "hasElement"@en ;
+                   skos:prefLabel "hasElement"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasEnergyAboveHull
+battgpt:hasEnergyAboveHull rdf:type owl:ObjectProperty ;
+                           rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
+                           rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                           rdfs:range battgpt:EnergyAboveHullProperty ;
+                           rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                           rdfs:label "hasEnergyAboveHull"@en ;
+                           skos:prefLabel "hasEnergyAboveHull"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasFormationEnergy
+battgpt:hasFormationEnergy rdf:type owl:ObjectProperty ;
+                           rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
+                           rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                           rdfs:range battgpt:FormationEnergyProperty ;
+                           rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                           rdfs:label "hasFormationEnergy"@en ;
+                           skos:prefLabel "hasFormationEnergy"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasShearModulus
+battgpt:hasShearModulus rdf:type owl:ObjectProperty ;
+                        rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
+                        rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                        rdfs:range battgpt:ShearModulusProperty ;
+                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                        rdfs:label "hasShearModulus"@en ;
+                        skos:prefLabel "hasShearModulus"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasSourceSite
+battgpt:hasSourceSite rdf:type owl:ObjectProperty ;
+                      rdfs:domain battgpt:CrystalBond ;
+                      rdfs:range battgpt:Site ;
+                      rdfs:comment "Relates a reified crystal bond entity to its origin atomic site."@en ;
+                      rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                      rdfs:label "hasSourceSite"@en ;
+                      skos:prefLabel "hasSourceSite"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasSpaceGroup
+battgpt:hasSpaceGroup rdf:type owl:ObjectProperty ;
+                      rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
+                      rdfs:domain battgpt:CrystalStructure ;
+                      rdfs:range battgpt:SpaceGroup ;
+                      rdfs:comment "Relates a crystal structure to its space group symmetry classification."@en ;
+                      rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                      rdfs:label "hasSpaceGroup"@en ;
+                      skos:prefLabel "hasSpaceGroup"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasStructure
+battgpt:hasStructure rdf:type owl:ObjectProperty ;
+                     rdfs:subPropertyOf emmo:EMMO_17e27c22_37e1_468c_9dd7_95e137f73e7f ;
+                     rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                     rdfs:range battgpt:CrystalStructure ;
+                     rdfs:comment "Relates a bulk battery material or compound to its crystallographic structure representation."@en ;
+                     rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                     rdfs:label "hasStructure"@en ;
+                     skos:prefLabel "hasStructure"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasTargetSite
+battgpt:hasTargetSite rdf:type owl:ObjectProperty ;
+                      rdfs:domain battgpt:CrystalBond ;
+                      rdfs:range battgpt:Site ;
+                      rdfs:comment "Relates a reified crystal bond entity to its destination atomic site."@en ;
+                      rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                      rdfs:label "hasTargetSite"@en ;
+                      skos:prefLabel "hasTargetSite"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasUnitCell
+battgpt:hasUnitCell rdf:type owl:ObjectProperty ;
+                    rdfs:subPropertyOf emmo:EMMO_17e27c22_37e1_468c_9dd7_95e137f73e7f ;
+                    rdfs:domain battgpt:CrystalStructure ;
+                    rdfs:range battgpt:UnitCell ;
+                    rdfs:comment "Relates a crystal structure to its repeating unit cell geometric model."@en ;
+                    rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                    rdfs:label "hasUnitCell"@en ;
+                    skos:prefLabel "hasUnitCell"@en .
+
+
+###  https://w3id.org/battgpt/kg#usesMaterial
+battgpt:usesMaterial rdf:type owl:ObjectProperty ;
+                     rdfs:domain battgpt:BatteryRole ;
+                     rdfs:range emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                     rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                     rdfs:label "usesMaterial"@en ;
+                     skos:prefLabel "usesMaterial"@en .
+
+
+
+
+
+
+#################################################################
+#    Data properties
+#################################################################
+
+###  https://w3id.org/battgpt/kg#hasAlpha
+battgpt:hasAlpha rdf:type owl:DatatypeProperty ;
+                 rdfs:domain battgpt:UnitCell ;
+                 rdfs:range xsd:double ;
+                 rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                 rdfs:label "hasAlpha"@en ;
+                 skos:prefLabel "hasAlpha"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasAtomicMass
+battgpt:hasAtomicMass rdf:type owl:DatatypeProperty ;
+                      rdfs:domain emmo:EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf ;
+                      rdfs:range xsd:double ;
+                      rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                      rdfs:label "hasAtomicMass"@en ;
+                      skos:prefLabel "hasAtomicMass"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasBeta
+battgpt:hasBeta rdf:type owl:DatatypeProperty ;
+                rdfs:domain battgpt:UnitCell ;
+                rdfs:range xsd:double ;
+                rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                rdfs:label "hasBeta"@en ;
+                skos:prefLabel "hasBeta"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasBondDistance
+battgpt:hasBondDistance rdf:type owl:DatatypeProperty ;
+                        rdfs:domain battgpt:CrystalBond ;
+                        rdfs:range xsd:double ;
+                        rdfs:comment "Inter-atomic bond distance in Angstroms between a site and its bonded neighbour."@en ;
+                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                        rdfs:label "hasBondDistance"@en ;
+                        skos:prefLabel "hasBondDistance"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasChemsys
+battgpt:hasChemsys rdf:type owl:DatatypeProperty ;
+                   rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                   rdfs:range xsd:string ;
+                   rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                   rdfs:label "hasChemsys"@en ;
+                   skos:prefLabel "hasChemsys"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasCif
+battgpt:hasCif rdf:type owl:DatatypeProperty ;
+               rdfs:domain battgpt:CrystalStructure ;
+               rdfs:range xsd:string ;
+               rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+               rdfs:label "hasCif"@en ;
+               skos:prefLabel "hasCif"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasCoordinationMethod
+battgpt:hasCoordinationMethod rdf:type owl:DatatypeProperty ;
+                              rdfs:domain battgpt:CrystalBond ;
+                              rdfs:range xsd:string ;
+                              rdfs:comment "Computational method used to determine bond coordination (e.g. CrystalNN, VoronoiNN)."@en ;
+                              rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                              rdfs:label "hasCoordinationMethod"@en ;
+                              skos:prefLabel "hasCoordinationMethod"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasCovalentRadius
+battgpt:hasCovalentRadius rdf:type owl:DatatypeProperty ;
+                          rdfs:domain emmo:EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf ;
+                          rdfs:range xsd:double ;
+                          rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                          rdfs:label "hasCovalentRadius"@en ;
+                          skos:prefLabel "hasCovalentRadius"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasElectronegativity
+battgpt:hasElectronegativity rdf:type owl:DatatypeProperty ;
+                             rdfs:domain emmo:EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf ;
+                             rdfs:range xsd:double ;
+                             rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                             rdfs:label "hasElectronegativity"@en ;
+                             skos:prefLabel "hasElectronegativity"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasFormula
+battgpt:hasFormula rdf:type owl:DatatypeProperty ;
+                   rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                   rdfs:range xsd:string ;
+                   rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                   rdfs:label "hasFormula"@en ;
+                   skos:prefLabel "hasFormula"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasFractionalX
+battgpt:hasFractionalX rdf:type owl:DatatypeProperty ;
+                       rdfs:domain battgpt:Site ;
+                       rdfs:range xsd:double ;
+                       rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                       rdfs:label "hasFractionalX"@en ;
+                       skos:prefLabel "hasFractionalX"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasFractionalY
+battgpt:hasFractionalY rdf:type owl:DatatypeProperty ;
+                       rdfs:domain battgpt:Site ;
+                       rdfs:range xsd:double ;
+                       rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                       rdfs:label "hasFractionalY"@en ;
+                       skos:prefLabel "hasFractionalY"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasFractionalZ
+battgpt:hasFractionalZ rdf:type owl:DatatypeProperty ;
+                       rdfs:domain battgpt:Site ;
+                       rdfs:range xsd:double ;
+                       rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                       rdfs:label "hasFractionalZ"@en ;
+                       skos:prefLabel "hasFractionalZ"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasGamma
+battgpt:hasGamma rdf:type owl:DatatypeProperty ;
+                 rdfs:domain battgpt:UnitCell ;
+                 rdfs:range xsd:double ;
+                 rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                 rdfs:label "hasGamma"@en ;
+                 skos:prefLabel "hasGamma"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasGroup
+battgpt:hasGroup rdf:type owl:DatatypeProperty ;
+                 rdfs:domain emmo:EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf ;
+                 rdfs:range xsd:integer ;
+                 rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                 rdfs:label "hasGroup"@en ;
+                 skos:prefLabel "hasGroup"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasLatticeA
+battgpt:hasLatticeA rdf:type owl:DatatypeProperty ;
+                    rdfs:domain battgpt:UnitCell ;
+                    rdfs:range xsd:double ;
+                    rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                    rdfs:label "hasLatticeA"@en ;
+                    skos:prefLabel "hasLatticeA"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasLatticeB
+battgpt:hasLatticeB rdf:type owl:DatatypeProperty ;
+                    rdfs:domain battgpt:UnitCell ;
+                    rdfs:range xsd:double ;
+                    rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                    rdfs:label "hasLatticeB"@en ;
+                    skos:prefLabel "hasLatticeB"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasLatticeC
+battgpt:hasLatticeC rdf:type owl:DatatypeProperty ;
+                    rdfs:domain battgpt:UnitCell ;
+                    rdfs:range xsd:double ;
+                    rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                    rdfs:label "hasLatticeC"@en ;
+                    skos:prefLabel "hasLatticeC"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasMaterialProjectId
+battgpt:hasMaterialProjectId rdf:type owl:DatatypeProperty ;
+                             rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                             rdfs:range xsd:string ;
+                             rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                             rdfs:label "hasMaterialProjectId"@en ;
+                             skos:prefLabel "hasMaterialProjectId"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasOxidationState
+battgpt:hasOxidationState rdf:type owl:DatatypeProperty ;
+                          rdfs:domain battgpt:Species ;
+                          rdfs:range xsd:integer ;
+                          rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                          rdfs:label "hasOxidationState"@en ;
+                          skos:prefLabel "hasOxidationState"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasPeriod
+battgpt:hasPeriod rdf:type owl:DatatypeProperty ;
+                  rdfs:domain emmo:EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf ;
+                  rdfs:range xsd:integer ;
+                  rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                  rdfs:label "hasPeriod"@en ;
+                  skos:prefLabel "hasPeriod"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasPointGroup
+battgpt:hasPointGroup rdf:type owl:DatatypeProperty ;
+                      rdfs:domain battgpt:CrystalStructure ;
+                      rdfs:range xsd:string ;
+                      rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                      rdfs:label "hasPointGroup"@en ;
+                      skos:prefLabel "hasPointGroup"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasSmactValidity
+battgpt:hasSmactValidity rdf:type owl:DatatypeProperty ;
+                         rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                         rdfs:range xsd:boolean ;
+                         rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                         rdfs:label "hasSmactValidity"@en ;
+                         skos:prefLabel "hasSmactValidity"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasSpaceGroupNumber
+battgpt:hasSpaceGroupNumber rdf:type owl:DatatypeProperty ;
+                            rdfs:domain battgpt:SpaceGroup ;
+                            rdfs:range xsd:integer ;
+                            rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                            rdfs:label "hasSpaceGroupNumber"@en ;
+                            skos:prefLabel "hasSpaceGroupNumber"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasSymmetrySymbol
+battgpt:hasSymmetrySymbol rdf:type owl:DatatypeProperty ;
+                          rdfs:domain battgpt:SpaceGroup ;
+                          rdfs:range xsd:string ;
+                          rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                          rdfs:label "hasSymmetrySymbol"@en ;
+                          skos:prefLabel "hasSymmetrySymbol"@en .
+
+
+###  https://w3id.org/battgpt/kg#hasValenceElectrons
+battgpt:hasValenceElectrons rdf:type owl:DatatypeProperty ;
+                            rdfs:domain emmo:EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf ;
+                            rdfs:range xsd:integer ;
+                            rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                            rdfs:label "hasValenceElectrons"@en ;
+                            skos:prefLabel "hasValenceElectrons"@en .
+
+
+###  https://w3id.org/battgpt/kg#isGapDirect
+battgpt:isGapDirect rdf:type owl:DatatypeProperty ;
+                    rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                    rdfs:range xsd:boolean ;
+                    rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                    rdfs:label "isGapDirect"@en ;
+                    skos:prefLabel "isGapDirect"@en .
+
+
+###  https://w3id.org/battgpt/kg#isMetal
+battgpt:isMetal rdf:type owl:DatatypeProperty ;
+                rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                rdfs:range xsd:boolean ;
+                rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                rdfs:label "isMetal"@en ;
+                skos:prefLabel "isMetal"@en .
+
+
+###  https://w3id.org/battgpt/kg#isStable
+battgpt:isStable rdf:type owl:DatatypeProperty ;
+                 rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                 rdfs:range xsd:boolean ;
+                 rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                 rdfs:label "isStable"@en ;
+                 skos:prefLabel "isStable"@en .
+
+
+###  https://w3id.org/battgpt/kg#isTheoretical
+battgpt:isTheoretical rdf:type owl:DatatypeProperty ;
+                      rdfs:domain emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea ;
+                      rdfs:range xsd:boolean ;
+                      rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                      rdfs:label "isTheoretical"@en ;
+                      skos:prefLabel "isTheoretical"@en .
+
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  https://w3id.org/battgpt/kg#BandGapProperty
+battgpt:BandGapProperty rdf:type owl:Class ;
+                        rdfs:subClassOf emmo:EMMO_31ec09ba_1713_42cb_83c7_b38bf6f9ced2 ;
+                        rdfs:comment "Represents the electronic band gap associated with a material, typically obtained from an electronic-structure calculation or experimental determination."@en ;
+                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                        rdfs:label "BandGapProperty"@en ;
+                        skos:prefLabel "BandGapProperty"@en .
+
+
+###  https://w3id.org/battgpt/kg#BulkModulusProperty
+battgpt:BulkModulusProperty rdf:type owl:Class ;
+                            rdfs:subClassOf emmo:EMMO_02c0621e_a527_4790_8a0f_2bb51973c819 ;
+                            rdfs:comment "Represents the bulk elastic modulus of a material under pressure."@en ;
+                            rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                            rdfs:label "BulkModulusProperty"@en ;
+                            skos:prefLabel "BulkModulusProperty"@en .
+
+
+###  https://w3id.org/battgpt/kg#EnergyAboveHullProperty
+battgpt:EnergyAboveHullProperty rdf:type owl:Class ;
+                                rdfs:subClassOf emmo:EMMO_31ec09ba_1713_42cb_83c7_b38bf6f9ced2 ;
+                                rdfs:comment "Represents the energy above the thermodynamic convex hull associated with a material and computational dataset."@en ;
+                                rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                rdfs:label "EnergyAboveHullProperty"@en ;
+                                skos:prefLabel "EnergyAboveHullProperty"@en .
+
+
+###  https://w3id.org/battgpt/kg#FormationEnergyProperty
+battgpt:FormationEnergyProperty rdf:type owl:Class ;
+                                rdfs:subClassOf emmo:EMMO_31ec09ba_1713_42cb_83c7_b38bf6f9ced2 ;
+                                rdfs:comment "Represents the calculated formation energy associated with a material under a specified computational methodology."@en ;
+                                rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                rdfs:label "FormationEnergyProperty"@en ;
+                                skos:prefLabel "FormationEnergyProperty"@en .
+
+
+###  https://w3id.org/battgpt/kg#ShearModulusProperty
+battgpt:ShearModulusProperty rdf:type owl:Class ;
+                             rdfs:subClassOf emmo:EMMO_02c0621e_a527_4790_8a0f_2bb51973c819 ;
+                             rdfs:comment "Represents the shear elastic modulus of a material."@en ;
+                             rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                             rdfs:label "ShearModulusProperty"@en ;
+                             skos:prefLabel "ShearModulusProperty"@en .
+
+
+###  https://w3id.org/battgpt/kg#BatteryRole
+battgpt:BatteryRole rdf:type owl:Class ;
+                    rdfs:subClassOf emmo:EMMO_4f226cf3_6d02_4d35_8566_a9e641bc6ff3 ;
+                    rdfs:comment "Functional role played by a material within an electrochemical battery system."@en ;
+                    rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                    rdfs:label "BatteryRole"@en ;
+                    skos:definition "Functional role played by a material within an electrochemical battery system."@en ;
+                    skos:prefLabel "BatteryRole"@en .
+
+
+###  https://w3id.org/battgpt/kg#CrystalStructure
+battgpt:CrystalStructure rdf:type owl:Class ;
+                         rdfs:comment "Crystallographic structural representation describing the periodic arrangement, unit cell, symmetry, and atomic sites of a material."@en ;
+                         rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                         rdfs:label "CrystalStructure"@en ;
+                         skos:prefLabel "CrystalStructure"@en .
+
+
+###  https://w3id.org/battgpt/kg#CrystalBond
+battgpt:CrystalBond rdf:type owl:Class ;
+                    rdfs:subClassOf owl:Thing ,
+                                    [ a owl:Restriction ;
+                                      owl:onProperty battgpt:hasSourceSite ;
+                                      owl:someValuesFrom battgpt:Site
+                                    ] ,
+                                    [ a owl:Restriction ;
+                                      owl:onProperty battgpt:hasTargetSite ;
+                                      owl:someValuesFrom battgpt:Site
+                                    ] ;
+                    rdfs:comment "Explicit reified bond entity connecting source site, target site, inter-atomic distance, and coordination method."@en ;
+                    rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                    rdfs:label "CrystalBond"@en ;
+                    skos:definition "Explicit reified bond entity connecting source site, target site, inter-atomic distance, and coordination method."@en ;
+                    skos:prefLabel "CrystalBond"@en .
+
+
+###  https://w3id.org/battgpt/kg#CrystalSystem
+battgpt:CrystalSystem rdf:type owl:Class ;
+                      rdfs:subClassOf emmo:EMMO_b7bcff25_ffc3_474e_9ab5_01b1664bd4ba ;
+                      rdfs:comment "Crystallographic crystal system family classification property."@en ;
+                      rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                      rdfs:label "CrystalSystem"@en ;
+                      skos:prefLabel "CrystalSystem"@en .
+
+
+###  https://w3id.org/battgpt/kg#ElectrolyteRole
+battgpt:ElectrolyteRole rdf:type owl:Class ;
+                        rdfs:subClassOf battgpt:BatteryRole ;
+                        rdfs:comment "Liquid, polymer, or solid-state ion-conducting electrolyte functional role."@en ;
+                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                        rdfs:label "ElectrolyteRole"@en ;
+                        skos:definition "Liquid, polymer, or solid-state ion-conducting electrolyte functional role."@en ;
+                        skos:prefLabel "ElectrolyteRole"@en .
+
+
+###  https://w3id.org/battgpt/kg#NegativeElectrodeRole
+battgpt:NegativeElectrodeRole rdf:type owl:Class ;
+                              rdfs:subClassOf battgpt:BatteryRole ;
+                              rdfs:comment "Anode / negative electrode functional component role."@en ;
+                              rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                              rdfs:label "NegativeElectrodeRole"@en ;
+                              skos:definition "Anode / negative electrode functional component role."@en ;
+                              skos:prefLabel "NegativeElectrodeRole"@en .
+
+
+###  https://w3id.org/battgpt/kg#PositiveElectrodeRole
+battgpt:PositiveElectrodeRole rdf:type owl:Class ;
+                              rdfs:subClassOf battgpt:BatteryRole ;
+                              rdfs:comment "Cathode / positive electrode functional component role."@en ;
+                              rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                              rdfs:label "PositiveElectrodeRole"@en ;
+                              skos:definition "Cathode / positive electrode functional component role."@en ;
+                              skos:prefLabel "PositiveElectrodeRole"@en .
+
+
+###  https://w3id.org/battgpt/kg#SeparatorRole
+battgpt:SeparatorRole rdf:type owl:Class ;
+                      rdfs:subClassOf battgpt:BatteryRole ;
+                      rdfs:comment "Porous separator or solid electrolyte interface barrier role."@en ;
+                      rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                      rdfs:label "SeparatorRole"@en ;
+                      skos:definition "Porous separator or solid electrolyte interface barrier role."@en ;
+                      skos:prefLabel "SeparatorRole"@en .
+
+
+###  https://w3id.org/battgpt/kg#Site
+battgpt:Site rdf:type owl:Class ;
+             rdfs:subClassOf owl:Thing ;
+             rdfs:comment "Atomic coordinate site located within a unit cell."@en ;
+             rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+             rdfs:label "Site"@en ;
+             skos:prefLabel "Site"@en .
+
+
+###  https://w3id.org/battgpt/kg#SpaceGroup
+battgpt:SpaceGroup rdf:type owl:Class ;
+                   rdfs:subClassOf emmo:EMMO_b7bcff25_ffc3_474e_9ab5_01b1664bd4ba ;
+                   rdfs:comment "Crystallographic space group symmetry classification property."@en ;
+                   rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                   rdfs:label "SpaceGroup"@en ;
+                   skos:prefLabel "SpaceGroup"@en .
+
+
+###  https://w3id.org/battgpt/kg#Species
+battgpt:Species rdf:type owl:Class ;
+                rdfs:subClassOf owl:Thing ,
+                                [ a owl:Restriction ;
+                                  owl:onProperty battgpt:hasElement ;
+                                  owl:someValuesFrom emmo:EMMO_4f40def1_3cd7_4067_9596_541e9a5134cf
+                                ] ;
+                rdfs:comment "Chemical atomic species occupying a site."@en ;
+                rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                rdfs:label "Species"@en ;
+                skos:prefLabel "Species"@en .
+
+
+###  https://w3id.org/battgpt/kg#UnitCell
+battgpt:UnitCell rdf:type owl:Class ;
+                 rdfs:subClassOf owl:Thing ;
+                 rdfs:comment "Repeating unit cell geometric spatial model."@en ;
+                 rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                 rdfs:label "UnitCell"@en ;
+                 skos:prefLabel "UnitCell"@en .
+
+
+
+
+#################################################################
+#    Individuals
+#################################################################
+
+###  https://w3id.org/battgpt/kg#ElectrolyteRoleIndividual
+battgpt:ElectrolyteRoleIndividual rdf:type owl:NamedIndividual ,
+                                           battgpt:ElectrolyteRole ;
+                                  rdfs:comment "Explicit OWL NamedIndividual for electrolyte battery functional role."@en ;
+                                  rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                  rdfs:label "ElectrolyteRoleIndividual"@en ;
+                                  skos:prefLabel "ElectrolyteRoleIndividual"@en .
+
+
+###  https://w3id.org/battgpt/kg#NegativeElectrodeRoleIndividual
+battgpt:NegativeElectrodeRoleIndividual rdf:type owl:NamedIndividual ,
+                                                 battgpt:NegativeElectrodeRole ;
+                                        rdfs:comment "Explicit OWL NamedIndividual for negative electrode / anode battery functional role."@en ;
+                                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                        rdfs:label "NegativeElectrodeRoleIndividual"@en ;
+                                         skos:prefLabel "NegativeElectrodeRoleIndividual"@en .
+
+
+###  https://w3id.org/battgpt/kg#PositiveElectrodeRoleIndividual
+battgpt:PositiveElectrodeRoleIndividual rdf:type owl:NamedIndividual ,
+                                                 battgpt:PositiveElectrodeRole ;
+                                        rdfs:comment "Explicit OWL NamedIndividual for positive electrode / cathode battery functional role."@en ;
+                                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                        rdfs:label "PositiveElectrodeRoleIndividual"@en ;
+                                         skos:prefLabel "PositiveElectrodeRoleIndividual"@en .
+
+
+###  https://w3id.org/battgpt/kg#SeparatorRoleIndividual
+battgpt:SeparatorRoleIndividual rdf:type owl:NamedIndividual ,
+                                         battgpt:SeparatorRole ;
+                                rdfs:comment "Explicit OWL NamedIndividual for separator battery functional role."@en ;
+                                rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
+                                rdfs:label "SeparatorRoleIndividual"@en ;
+                                skos:prefLabel "SeparatorRoleIndividual"@en .
+
+
+###  Generated by the OWL API (version 4.5.29.2024-05-13T12:11:03Z) https://github.com/owlcs/owlapi

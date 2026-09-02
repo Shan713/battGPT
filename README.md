@@ -1,94 +1,191 @@
-# Battery Materials Knowledge Graph (battGPT)
+# BattGPT: Battery Materials Ontology & Knowledge Graph
 
-A semantic foundation and modular data ingestion pipeline for building a research-grade **Battery Materials Knowledge Graph** integrating **BattINFO**, **EMMO ontologies** (Core, Chemical Substance, Electrochemistry, Crystallography), **Materials Project**, **Pymatgen**, and **SMACT**.
+[![OWL2 DL](https://img.shields.io/badge/OWL2-DL%20Compliant-blue.svg)](https://www.w3.org/TR/owl2-overview/)
+[![EMMO Extension](https://img.shields.io/badge/EMMO-Compatible-green.svg)](https://w3id.org/emmo)
+[![BattINFO Extension](https://img.shields.io/badge/BattINFO-Compatible-orange.svg)](https://w3id.org/battinfo)
+[![License](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+
+**BattGPT** (`https://w3id.org/battgpt/kg#`) is an OWL2 DL extension of the **European Materials
+Modelling Ontology (EMMO)** and the **Battery Interface Ontology (BattINFO)**, built to represent
+3D battery materials: crystallography (unit cells, sites, species, reified bonds), DFT-derived
+physical properties (band gap, formation energy, elastic moduli, ...), and battery cell component
+roles (positive/negative electrode, electrolyte, separator).
+
+This repository has two parts:
+
+1. **The ontology** — [`BattGpt-Ontology/`](BattGpt-Ontology/), the authoritative definition.
+2. **The population pipeline** — ingests real Materials Project records and builds an RDF
+   knowledge graph of individuals against that ontology.
+
+There is no GNN/tensor export in this repository — the scope here is ontology + knowledge graph
+only.
 
 ---
 
-## 1. Project Overview
-
-This project constructs a validated RDF Knowledge Graph representing battery materials, crystal structures, unit cell geometry, atomic sites, chemical species, space groups, crystal connectivity graphs, computed physical properties (band gap, formation energy, convex hull stability), and curated battery role semantics.
-
-The Knowledge Graph is designed specifically to serve as the semantic graph layer for downstream Graph Neural Network (GNN) embeddings and **CrystalLLM** integration.
-
----
-
-## 2. Pipeline Architecture & Modular Structure
-
-The pipeline is completely modular and follows a strict progressive enrichment model:
+## Repository layout
 
 ```
-pipeline/
-├── config/
-│   └── config.py               # Pipeline configuration & deterministic URIScheme
-├── data/
-│   └── cached_mp_materials.json# Authentic Materials Project dataset snapshot
-├── models/
-│   └── material_record.py     # Single unified MaterialRecord & SiteData / BondData
-├── ingest/
-│   └── materials_project.py    # Materials Project API client & authentic dataset loader
-├── processing/
-│   ├── pymatgen_processor.py   # Pymatgen structure, CrystalNN/VoronoiNN connectivity processor
-│   ├── smact_processor.py      # SMACT chemical validity & electronegativity engine
-│   └── battinfo_mapper.py      # Curated BattINFO battery role semantic mapper
-├── rdf/
-│   ├── rdf_builder.py          # Master RDF graph builder and namespace binder
-│   ├── triple_generator.py     # RDF triple emitter for material-centric nodes & predicates
-│   └── validator.py            # Extended semantic graph validation engine
-└── export/
-    └── rdf_export.py           # Serialization to Turtle (.ttl), RDF/XML (.rdf), JSON-LD (.jsonld)
+BattGpt-Ontology/           The ontology itself
+  battgpt_v0.3.0.ttl          BattGPT extension: predicates, classes, and battery-role individuals
+  imports/                    Local snapshots of emmo.ttl, battery.ttl, chemical-substance.ttl,
+                               battinfo.ttl (4 of the 5 ontologies battgpt_v0.3.0.ttl imports —
+                               EMMO domain-electrochemistry, added in v0.3.0, has no local snapshot
+                               yet, so Protege will fetch that one import over the network)
+  catalog-v001.xml            Protege/OWL-API catalog resolving 4 of the 5 owl:imports above to the
+                               local imports/ files, so battgpt_v0.3.0.ttl mostly opens offline
+  UML_BattGPT_final (1).drawio  UML diagram of the ontology (open at https://app.diagrams.net)
+
+pipeline/                   Population pipeline (Python)
+  config/                     PipelineConfig: MP API key, output dir, curated + cathode-test ID lists
+  data/cached_mp_materials.json     Offline cache of 16 curated materials (real MP API responses)
+  data/cached_electrode_data.json   Offline cache of real MP insertion-electrode data (open-circuit
+                                     voltage, gravimetric specific capacity) for the 10 cathodes
+  ingest/                     Materials Project ingestion (offline cache, falls back to live API)
+  processing/                 Pymatgen (structure/CrystalNN bonds), SMACT, BattINFO role mapping,
+                               StructureFamily classification, cell-level electrochemistry
+  rdf/                        RDF graph construction, triple generation, validation
+    ontology_cache/             Local EMMO 1.0.3 inferred closure, merged into every exported KG
+                                 so it's readable standalone even without resolving owl:imports
+  export/                     Turtle / RDF-XML / JSON-LD serialization + offline import catalog
+
+scripts/build_kg.py         Runs the pipeline end-to-end and writes the KG to output/
+
+output/battgpt_kg/          Generated KG for the 12 curated materials
+output/battgpt_kg_cathodes/ Generated KG for the 10-cathode test set (see below) — both are
+                             regenerated by scripts/build_kg.py, not committed (see .gitignore)
+
+battinfo/                   Vendored clone of github.com/BIG-MAP/BattINFO — provides the Python
+                             .venv this pipeline runs under (rdflib, pymatgen, smact)
 ```
 
 ---
 
-## 3. Key Pipeline Features & Fixes (Stage 2.1 Refactor)
+## Ontology overview
 
-1. **Authentic Materials Project Snapshot** (`pipeline/data/cached_mp_materials.json`): Stores full `pymatgen.core.Structure.as_dict()`, authentic CIF strings, spacegroup symbols/numbers, lattice parameters, and physical properties.
-2. **Original Crystallographic Structure Preservation**: Retains CIF strings (`rec.cif`) and Pymatgen structure dictionaries throughout the pipeline, emitting `battgpt:hasCif` literals on `cryst:Crystal` nodes.
-3. **Crystallographic Connectivity Graph Extraction**: Uses Pymatgen `CrystalNN` (primary) and `VoronoiNN` (fallback) to extract site-to-site bonding relationships (`battgpt:hasBondTo` and `battgpt:hasBondDistance`) as ready-to-use edges for downstream GNN graph construction.
-4. **Genuine SMACT Package Integration**: Uses `smact.Element(symbol).pauling_eneg` and SMACT charge neutrality reasoning.
-5. **Multi-Level Provenance Tracking**: Attaches `prov:wasGeneratedBy` and `dcterms:source` annotations to all material nodes, crystal structures, sites, bonds, and properties.
-6. **Extended Semantic Validation Engine**: Audits missing lattice parameters, space groups, sites, species, provenance, site connectivity bonds, and processing flags (`pmg_success`, `smact_success`).
-7. **Automated Regression Test Suite** (`tests/test_pipeline.py`): Full integration test suite covering pipeline execution, CrystalNN connectivity, SMACT reasoning, RDF triples, multi-format parsing, and validation.
+`battgpt_v0.3.0.ttl` adds, on top of EMMO / BattINFO / EMMO domain-electrochemistry:
+
+- **Crystallography classes**: `CrystalStructure`, `UnitCell`, `Site`, `Species`, `SpaceGroup`,
+  `CrystalSystem`, and the reified `CrystalBond` (source site, target site, bond distance,
+  coordination method — so bonds themselves carry data, not just a link). `hasCoordinationGeometry`
+  ranges over the dedicated `CoordinationGeometry` class.
+- **A `StructureFamily` taxonomy** (new in v0.3.0) — `OxideStructureFamily` /
+  `PolyanionStructureFamily` / `SulfideStructureFamily` and their 9 leaf structural-prototype
+  classes (`LayeredOxideStructure`, `SpinelStructure`, `OlivineStructure`, `NASICONStructure`,
+  `GarnetStructure`, `LGPSTypeStructure`, ...), each with a canonical `owl:NamedIndividual`,
+  attached to a `CrystalStructure` via `hasStructureFamily`. This fills a gap genuinely absent from
+  the imported EMMO/BattINFO closure.
+- **DFT property classes**: `BandGapProperty`, `FormationEnergyProperty`,
+  `EnergyAboveHullProperty`, `BulkModulusProperty`/`ShearModulusProperty` (re-anchored under
+  `emmo:Pressure` in v0.3.0), attached via `emmo:hasProperty` subproperties (`hasBandGap`,
+  `hasFormationEnergy`, ...) so they stay interoperable with plain EMMO tooling.
+- **Battery-cell-level electrochemistry** (new in v0.3.0) — `hasOpenCircuitVoltage`,
+  `hasSpecificCapacity`, `hasCapacity`, `hasIonicConductivity`, `hasCRate`,
+  `hasCoulombicEfficiency`, `hasStateOfCharge`, `hasVoltage`, all with domain `battery:BatteryCell`
+  and range reused directly from EMMO domain-electrochemistry rather than redefined locally.
+- **Battery role classes**: `BatteryRole` and its subclasses `PositiveElectrodeRole`,
+  `NegativeElectrodeRole`, `ElectrolyteRole`, `SeparatorRole`, each with a canonical
+  `owl:NamedIndividual`, `skos:closeMatch`-aligned (v0.3.0) to the corresponding EMMO
+  domain-electrochemistry classes. `belongsToElectrode`'s range is tightened (v0.3.0) to
+  `PositiveElectrodeRole`/`NegativeElectrodeRole` only — `usesMaterial`, its inverse, stays general
+  over all four subclasses, which is how Electrolyte/Separator materials still link to their role.
+- Materials themselves are typed as the core EMMO `ChemicalSubstance` class (not a
+  domain-ontology alias), and periodic-table elements as `ChemicalElement`.
+
+`BattGpt-Ontology/battgpt_v0.3.0.ttl` is the ontology to open directly in Protege. Its
+`catalog-v001.xml` + `imports/` resolve 4 of its 5 `owl:imports` locally; the 5th (EMMO
+domain-electrochemistry, added in v0.3.0) has no local snapshot cached yet, so Protege will try to
+fetch that one over the network.
 
 ---
 
-## 4. Deterministic URI Scheme
+## Building the knowledge graph
 
-To prevent node collisions and ensure reproducible RDF triple generation across pipelines:
+### 1. Python environment
 
-| Entity Class | URI Template | Example URI |
-| :--- | :--- | :--- |
-| **Material** | `https://w3id.org/battgpt/kg/material/{material_id}` | `.../material/mp-19017` |
-| **Crystal** | `https://w3id.org/battgpt/kg/crystal/{material_id}` | `.../crystal/mp-19017` |
-| **UnitCell** | `https://w3id.org/battgpt/kg/unitcell/{material_id}` | `.../unitcell/mp-19017` |
-| **SpaceGroup** | `https://w3id.org/battgpt/kg/spacegroup/{spacegroup_number}` | `.../spacegroup/166` |
-| **CrystalSystem** | `https://w3id.org/battgpt/kg/crystalsystem/{system_name}` | `.../crystalsystem/trigonal` |
-| **AtomicSite** | `https://w3id.org/battgpt/kg/site/{material_id}/{site_index}` | `.../site/mp-19017/0` |
-| **AtomicSpecies** | `https://w3id.org/battgpt/kg/species/{symbol}_{oxidation_state}` | `.../species/Co_3` |
-| **Element** | `https://w3id.org/battgpt/kg/element/{symbol}` | `.../element/Co` |
-| **Property** | `https://w3id.org/battgpt/kg/property/{material_id}/{prop_name}` | `.../property/mp-19017/band_gap` |
+Use the vendored BattINFO clone's venv, which already has `rdflib`, `pymatgen`, and `smact`:
 
----
-
-## 5. Environment Setup & Execution
-
-### Prerequisites
-- Python 3.10+
-- `uv` package manager
-
-### Running Pipeline
 ```bash
-uv run --directory battinfo/battinfo python ../../examples/run_pipeline.py
+battinfo/battinfo/.venv/bin/python3 -m pip list | grep -E "rdflib|pymatgen|smact"
 ```
 
-### Running Automated Test Suite
+(The root `.venv/` in this repo does **not** have these packages installed — don't use it for the
+pipeline.)
+
+### 2. Run the pipeline
+
 ```bash
-PYTHONPATH=../../ uv run --directory battinfo/battinfo python -m unittest discover -s ../../tests -p "test_*.py"
+battinfo/battinfo/.venv/bin/python3 scripts/build_kg.py           # all 12 curated materials -> output/battgpt_kg/
+battinfo/battinfo/.venv/bin/python3 scripts/build_kg.py 10        # first 10 of that list
+battinfo/battinfo/.venv/bin/python3 scripts/build_kg.py cathodes  # 10-cathode test set -> output/battgpt_kg_cathodes/
 ```
+
+Ingests the requested materials from `pipeline/data/cached_mp_materials.json` (a real, API-sourced
+snapshot — no synthetic data), runs Pymatgen (CrystalNN bond connectivity), SMACT, BattINFO
+role-mapping, `StructureFamily` classification, and cell-level electrochemistry enrichment, builds
+the RDF graph against `BattGpt-Ontology/battgpt_v0.3.0.ttl`, validates it, and writes:
+
+- `battery_kg.ttl` / `.rdf` / `.jsonld` — the knowledge graph. It declares the same 5 `owl:imports`
+  as `BattGpt-Ontology/battgpt_v0.3.0.ttl` — genuine provenance of what it extends — and also
+  inlines the BattGPT predicate/class declarations plus the full local EMMO closure, so the file is
+  readable standalone even without resolving those imports.
+- `catalog-v001.xml` — written alongside the KG on every export, mapping each `owl:imports` IRI to
+  the matching file under `BattGpt-Ontology/imports/` (4 of the 5 — see the ontology-overview note
+  above on EMMO domain-electrochemistry). Protege reads a `catalog-v001.xml` in the same folder as
+  the file it opens automatically.
+- `validation_report.{json,txt}` — triple/entity counts and any integrity errors.
+
+### The 12 curated materials (`sample_materials`)
+
+Each verified against the live MP API:
+
+| Material ID | Formula | Role |
+|---|---|---|
+| mp-22526 | LiCoO2 | Positive electrode (cathode) |
+| mp-19017 | LiFePO4 | Positive electrode (cathode) |
+| mp-25411 | LiNiO2 | Positive electrode (cathode) |
+| mp-22584 | LiMn2O4 | Positive electrode (cathode) |
+| mp-19226 | NaFePO4 | Positive electrode (Na-ion cathode) |
+| mp-776557 | Na3V2(PO4)3 | Positive electrode (NASICON Na-ion cathode) |
+| mp-685194 | Li4Ti5O12 | Negative electrode (anode) |
+| mp-48 | C (graphite) | Negative electrode (anode) |
+| mp-149 | Si | Negative electrode (anode) |
+| mp-696128 | Li10Ge(PS6)2 (LGPS) | Electrolyte (solid) |
+| mp-942733 | Li7La3Zr2O12 (LLZO) | Electrolyte (solid) |
+| mp-1143 | Al2O3 | Separator (insulating ceramic) |
+
+### The 10-cathode test set (`cathode_test_materials`)
+
+Exercises the full v0.3.0 battery-chemistry surface — `StructureFamily` classification plus
+real, Materials-Project-computed cell electrochemistry (open-circuit voltage and gravimetric
+specific capacity, from `mp_api.client.MPRester.materials.insertion_electrodes`, cached in
+`pipeline/data/cached_electrode_data.json`):
+
+| Material ID | Formula | StructureFamily | OCV (V) | Specific capacity (mAh/g) |
+|---|---|---|---|---|
+| mp-22526 | LiCoO2 | LayeredOxideStructure | 3.79 | 273.8 |
+| mp-19017 | LiFePO4 | OlivineStructure | 3.50 | 169.9 |
+| mp-25411 | LiNiO2 | LayeredOxideStructure | 3.94 | 274.5 |
+| mp-22584 | LiMn2O4 | SpinelStructure | 2.17 | 413.0 |
+| mp-19226 | NaFePO4 | OlivineStructure | 3.07 | 154.2 |
+| mp-776557 | Na3V2(PO4)3 | NASICONStructure | 3.35 | 176.4 |
+| mp-18997 | LiMnPO4 | OlivineStructure | 3.80 | 170.9 |
+| mp-18957 | NaMnO2 | LayeredOxideStructure | 2.75 | 243.8 |
+| mp-19149 | NaNiO2 | LayeredOxideStructure | 3.30 | 235.8 |
+| mp-6396 | Li3V2(PO4)3 | NASICONStructure | 3.16 | 258.6 |
+
+Only `hasOpenCircuitVoltage` and `hasSpecificCapacity` are populated from this data —
+`hasCapacity` (needs a defined cell size, not just a material), `hasIonicConductivity`, `hasCRate`,
+`hasCoulombicEfficiency`, and `hasStateOfCharge` are experimental/cycling metrics with no authentic
+per-material source in Materials Project's DFT-derived dataset, so they're intentionally left
+unpopulated rather than backfilled with invented numbers.
+
+To add more materials to either list, either extend `pipeline/data/cached_mp_materials.json` (and,
+for cathodes, `cached_electrode_data.json`) with additional authentic MP records, or set
+`MP_API_KEY` in `.env` so `MPIngester` falls back to the live Materials Project API for IDs not in
+the offline cache.
 
 ---
 
-## 6. Output Artifacts
+## License
 
-- **`output/`**: `battery_kg.ttl` (Turtle), `battery_kg.rdf` (RDF/XML), `battery_kg.jsonld` (JSON-LD).
-- **`validation/`**: `validation_report.txt`, `validation_report.json`.
+Distributed under the [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).

@@ -62,10 +62,28 @@ class MaterialRecord:
     energy_above_hull: float = 0.0
     density: float = 0.0
     volume: float = 0.0
+    energy_per_atom: float | None = None
+    density_atomic: float | None = None
     is_stable: bool = False
     e_fermi: float | None = None
     magnetic_ordering: str | None = None
-    elastic_k_vrh: float | None = None
+    total_magnetization: float | None = None
+    total_magnetization_normalized_formula_units: float | None = None
+    total_magnetization_normalized_vol: float | None = None
+    is_metal: bool | None = None
+    is_gap_direct: bool | None = None
+    elastic_k_vrh: float | None = None  # Bulk modulus (GPa)
+    elastic_g_vrh: float | None = None  # Shear modulus (GPa)
+    universal_anisotropy: float | None = None
+    poisson_ratio: float | None = None
+    num_sites: int | None = None
+    nelements: int | None = None
+    num_magnetic_sites: int | None = None
+    num_unique_magnetic_sites: int | None = None
+    chemsys: str | None = None
+    point_group: str | None = None
+    is_theoretical: bool | None = None
+    task_ids: list[str] = field(default_factory=list)
 
     # ── Step 2: Pymatgen Structural Enrichment & Connectivity ──
     lattice_a: float = 0.0
@@ -88,6 +106,17 @@ class MaterialRecord:
     is_active_material: bool = False
     battery_role_iri: str | None = None       # EMMO/BattINFO IRI
     battery_role_evidence: str | None = None  # Provenance rationale
+
+    # ── Step 5: Structural-Prototype Classification (battgpt: StructureFamily taxonomy, v0.3.0) ──
+    structure_family: str | None = None           # leaf battgpt: class local name, e.g. "OlivineStructure"
+    structure_family_evidence: str | None = None   # curated rationale (formula + space group)
+
+    # ── Step 6: Battery-Cell-Level Electrochemistry (battgpt: v0.3.0, from MP insertion-electrode data) ──
+    working_ion: str | None = None
+    average_voltage: float | None = None          # V, -> hasOpenCircuitVoltage
+    capacity_grav: float | None = None            # mAh/g, -> hasSpecificCapacity
+    electrode_battery_formula: str | None = None
+    electrode_evidence: str | None = None
 
     # ── Provenance & Execution Diagnostics ──
     provenance_map: dict[str, str] = field(default_factory=lambda: {
@@ -114,5 +143,25 @@ class MaterialRecord:
         if self.e_fermi is not None:
             props.append(PropertyData("e_fermi", self.e_fermi, "http://qudt.org/vocab/unit/EV", "eV", mp_prov, "Fermi energy"))
         if self.elastic_k_vrh is not None:
-            props.append(PropertyData("elastic_k_vrh", self.elastic_k_vrh, "http://qudt.org/vocab/unit/GigaPA", "GPa", mp_prov, "Bulk modulus K_VRH"))
+            props.append(PropertyData("bulk_modulus", self.elastic_k_vrh, "http://qudt.org/vocab/unit/GigaPA", "GPa", mp_prov, "Bulk modulus K_VRH"))
+        if self.elastic_g_vrh is not None:
+            props.append(PropertyData("shear_modulus", self.elastic_g_vrh, "http://qudt.org/vocab/unit/GigaPA", "GPa", mp_prov, "Shear modulus G_VRH"))
+        if self.total_magnetization is not None:
+            props.append(PropertyData("total_magnetization", self.total_magnetization, "http://qudt.org/vocab/unit/BohrMagneton", "µB", mp_prov, "Total magnetic moment"))
+        if self.universal_anisotropy is not None:
+            props.append(PropertyData("universal_anisotropy", self.universal_anisotropy, "http://qudt.org/vocab/unit/UNITLESS", "unitless", mp_prov, "Universal elastic anisotropy index"))
+        if self.poisson_ratio is not None:
+            props.append(PropertyData("poisson_ratio", self.poisson_ratio, "http://qudt.org/vocab/unit/UNITLESS", "unitless", mp_prov, "Poisson ratio"))
+        optional_properties = [
+            ("energy_per_atom", self.energy_per_atom, "http://qudt.org/vocab/unit/EV", "eV/atom", "DFT energy per atom"),
+            ("density_atomic", self.density_atomic, "http://qudt.org/vocab/unit/ANGSTROM3", "Å³/atom", "Atomic volume"),
+            ("total_magnetization_normalized_formula_units", self.total_magnetization_normalized_formula_units, "http://qudt.org/vocab/unit/BohrMagneton", "µB/formula unit", "Total magnetization normalized by formula units"),
+            ("total_magnetization_normalized_vol", self.total_magnetization_normalized_vol, "http://qudt.org/vocab/unit/BohrMagneton", "µB/Å³", "Total magnetization normalized by volume"),
+            ("nelements", self.nelements, "http://qudt.org/vocab/unit/UNITLESS", "count", "Number of chemical elements"),
+            ("num_magnetic_sites", self.num_magnetic_sites, "http://qudt.org/vocab/unit/UNITLESS", "count", "Number of magnetic sites"),
+            ("num_unique_magnetic_sites", self.num_unique_magnetic_sites, "http://qudt.org/vocab/unit/UNITLESS", "count", "Number of unique magnetic sites"),
+        ]
+        for name, value, unit_iri, unit_symbol, description in optional_properties:
+            if value is not None:
+                props.append(PropertyData(name, float(value), unit_iri, unit_symbol, mp_prov, description))
         return props
