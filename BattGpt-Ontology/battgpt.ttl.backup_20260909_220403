@@ -101,16 +101,6 @@ battgpt:hasBondTo rdf:type owl:ObjectProperty ;
                   skos:prefLabel "hasBondTo"@en .
 
 
-###  https://w3id.org/battgpt/kg#hasCharacteristicSpaceGroup
-battgpt:hasCharacteristicSpaceGroup rdf:type owl:ObjectProperty ;
-                                    rdfs:domain battgpt:StructureFamily ;
-                                    rdfs:range battgpt:SpaceGroup ;
-                                    rdfs:comment "Relates a structure-family leaf class to the space group of its idealized/canonical structural prototype. Describes the defining prototype, not a hard per-individual constraint: real compounds classified under a family can show lower-symmetry distortions of this space group (e.g. Jahn-Teller-distorted spinels) while still correctly belonging to the family. Only asserted where independently verified against literature or the source materials database, not for every StructureFamily leaf (audit pass, see battgpt_ontology_constraint_and_semantics_audit.md)."@en ;
-                                    rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
-                                    rdfs:label "hasCharacteristicSpaceGroup"@en ;
-                                    skos:prefLabel "hasCharacteristicSpaceGroup"@en .
-
-
 ###  https://w3id.org/battgpt/kg#hasBulkModulus
 battgpt:hasBulkModulus rdf:type owl:ObjectProperty ;
                        rdfs:subPropertyOf emmo:EMMO_e1097637_70d2_4895_973f_2396f04fa204 ;
@@ -687,27 +677,6 @@ emmo:EMMO_df96cbb6_b5ee_4222_8eab_b3675df24bea
         rdfs:comment "BattGPT extension axiom on the imported ChemicalSubstance class: requires at least one emmo:hasProperty value of type emmo:Property. Deliberately weak — satisfied by any single one of hasBandGap, hasBulkModulus, hasEnergyAboveHull, hasFormationEnergy, or hasShearModulus (all subPropertyOf hasProperty, domain ChemicalSubstance, range a Property subclass) being populated, not a requirement that all five be present. Does not cover hasStructure, which is subPropertyOf hasPart rather than hasProperty and is intentionally left unconstrained on this class (see CrystalStructure's comment) since not every chemical substance in this KG's scope is expected to have a resolved crystal structure. This axiom reaches every ChemicalSubstance individual in any dataset ever loaded alongside this ontology, not only BattGPT's own materials — kept deliberately weak for that reason rather than requiring each specific quantity individually, since none of the five is always computed or even physically meaningful for every substance (e.g. elastic moduli for a liquid electrolyte)."@en .
 
 
-###  https://w3id.org/emmo/domain/battery#battery_68ed592a_7924_45d0_a108_94d6275d57f0 (EMMO/BattINFO BatteryCell — extended here, not locally defined)
-battery:battery_68ed592a_7924_45d0_a108_94d6275d57f0
-        rdfs:subClassOf [ rdf:type owl:Restriction ;
-                           owl:onProperty emmo:EMMO_8e52c42b_e879_4473_9fa1_4b23428b392b ;
-                           owl:someValuesFrom battgpt:BatteryRole
-                         ] ,
-                         [ rdf:type owl:Restriction ;
-                           owl:onProperty emmo:EMMO_8e52c42b_e879_4473_9fa1_4b23428b392b ;
-                           owl:someValuesFrom battgpt:PositiveElectrodeRole
-                         ] ,
-                         [ rdf:type owl:Restriction ;
-                           owl:onProperty emmo:EMMO_8e52c42b_e879_4473_9fa1_4b23428b392b ;
-                           owl:someValuesFrom battgpt:NegativeElectrodeRole
-                         ] ,
-                         [ rdf:type owl:Restriction ;
-                           owl:onProperty emmo:EMMO_8e52c42b_e879_4473_9fa1_4b23428b392b ;
-                           owl:someValuesFrom battgpt:ElectrolyteRole
-                         ] ;
-        rdfs:comment "BattGPT extension axiom on the imported BatteryCell class: requires at least one emmo:hasRole value of type battgpt:BatteryRole. Reuses EMMO's own Role/Whole/hasRole mechanism (hasRole domain=Whole, range=Role; BatteryRole is already subClassOf Role) rather than inventing a new property — no new property was created for this. BatteryCell's own EMMO definition already describes it as 'an assembly of electrodes, electrolyte, container, terminals and usually separators', i.e. a Whole whose defining parts include role-players; this axiom formalizes that. Because hasRole's domain is emmo:Whole, this restriction entails BatteryCell is a Whole via domain propagation, so no separate subClassOf Whole assertion is needed. Establishes the path BatteryCell -hasRole-> BatteryRole -usesMaterial-> ChemicalSubstance, which was previously unconnected. Verified in a disposable test copy under both ROBOT+ELK and ROBOT+HermiT (full merged closure): introduces zero new unsatisfiable classes; the ontology still shows only the same two pre-existing, EMMO-internal unsatisfiable classes (CentiMetreSecondDegreeCelsius, MagneticMoment) that exist with or without this axiom. Three further role-specific existence restrictions added in this pass (semantic_enrichment_audit.md Phase 8, validated in battgpt_candidate.ttl): every functioning cell modeled in this KG's scope has a positive electrode, a negative electrode, and an electrolyte role filled (blended/composite electrodes and multi-component electrolytes mean these are 'some', never exactly-1). A SeparatorRole restriction was deliberately NOT added: all-solid-state cells can be separator-free, and this class's own comment already hedges 'usually separators', not 'always' — the open-world test fails for that one, so it stays unconstrained."@en .
-
-
 ###  https://w3id.org/battgpt/kg#ArgyroditeStructure
 battgpt:ArgyroditeStructure rdf:type owl:Class ;
                             rdfs:subClassOf battgpt:SulfideStructureFamily ;
@@ -846,12 +815,8 @@ battgpt:FormationEnergyProperty rdf:type owl:Class ;
 
 ###  https://w3id.org/battgpt/kg#GarnetStructure
 battgpt:GarnetStructure rdf:type owl:Class ;
-                        rdfs:subClassOf battgpt:OxideStructureFamily ,
-                                        [ rdf:type owl:Restriction ;
-                                          owl:onProperty battgpt:hasCharacteristicSpaceGroup ;
-                                          owl:hasValue battgpt:Ia3dIndividual
-                                        ] ;
-                        rdfs:comment "Garnet-type (space group Ia-3d) framework structure used by fast Li-ion-conducting solid electrolytes. Reparented (audit pass) from directly under StructureFamily to OxideStructureFamily: garnets are complex-oxide framework structures, matching OxideStructureFamily's own definition (a close-packed or framework oxide anion sublattice). Ia-3d verified against independent literature on the cited example (Li7La3Zr2O12/LLZO): cubic garnet is Ia-3d across measured temperature ranges."@en ;
+                        rdfs:subClassOf battgpt:StructureFamily ;
+                        rdfs:comment "Garnet-type (space group Ia-3d) framework structure used by fast Li-ion-conducting solid electrolytes."@en ;
                         rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                         rdfs:label "GarnetStructure"@en ;
                         skos:example "Li7La3Zr2O12 / LLZO (mp-942733)"@en ;
@@ -902,12 +867,8 @@ battgpt:NegativeElectrodeRole rdf:type owl:Class ;
 
 ###  https://w3id.org/battgpt/kg#OlivineStructure
 battgpt:OlivineStructure rdf:type owl:Class ;
-                         rdfs:subClassOf battgpt:PolyanionStructureFamily ,
-                                         [ rdf:type owl:Restriction ;
-                                           owl:onProperty battgpt:hasCharacteristicSpaceGroup ;
-                                           owl:hasValue battgpt:PnmaIndividual
-                                         ] ;
-                         rdfs:comment "Olivine-type (space group Pnma) phosphate structure. Pnma verified as an exact match to the cited example's own Materials Project record (mp-19017, LiFePO4: 'Orthorhombic, Pnma, 62')."@en ;
+                         rdfs:subClassOf battgpt:PolyanionStructureFamily ;
+                         rdfs:comment "Olivine-type (space group Pnma) phosphate structure."@en ;
                          rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                          rdfs:label "OlivineStructure"@en ;
                          skos:example "LiFePO4 (mp-19017)"@en ,
@@ -926,8 +887,8 @@ battgpt:OxideStructureFamily rdf:type owl:Class ;
 
 ###  https://w3id.org/battgpt/kg#PerovskiteStructure
 battgpt:PerovskiteStructure rdf:type owl:Class ;
-                            rdfs:subClassOf battgpt:OxideStructureFamily ;
-                            rdfs:comment "ABO3 perovskite-type framework structure, used by some Li-ion-conducting solid electrolytes (e.g. LLTO) and by many other battery-relevant oxides. Not yet exemplified in the 12 curated pipeline materials as of v0.3.0. Reparented (audit pass) from directly under StructureFamily to OxideStructureFamily: ABO3 perovskite is a canonical oxide-framework structure, matching OxideStructureFamily's own definition."@en ;
+                            rdfs:subClassOf battgpt:StructureFamily ;
+                            rdfs:comment "ABO3 perovskite-type framework structure, used by some Li-ion-conducting solid electrolytes (e.g. LLTO) and by many other battery-relevant oxides. Not yet exemplified in the 12 curated pipeline materials as of v0.3.0."@en ;
                             rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                             rdfs:label "PerovskiteStructure"@en ;
                             skos:prefLabel "PerovskiteStructure"@en .
@@ -1035,12 +996,8 @@ battgpt:Species rdf:type owl:Class ;
 
 ###  https://w3id.org/battgpt/kg#SpinelStructure
 battgpt:SpinelStructure rdf:type owl:Class ;
-                        rdfs:subClassOf battgpt:OxideStructureFamily ,
-                                        [ rdf:type owl:Restriction ;
-                                          owl:onProperty battgpt:hasCharacteristicSpaceGroup ;
-                                          owl:hasValue battgpt:Fd3mIndividual
-                                        ] ;
-                        rdfs:comment "AB2O4 spinel-type structure (space group Fd-3m). Fd-3m is the well-established canonical cubic spinel space group for the idealized prototype; the specific cited example (mp-22584, LiMn2O4) can show Jahn-Teller-distorted lower symmetry in its DFT-relaxed structure per community reports, so this restriction describes the family's defining prototype rather than a hard per-individual requirement."@en ;
+                        rdfs:subClassOf battgpt:OxideStructureFamily ;
+                        rdfs:comment "AB2O4 spinel-type structure (space group Fd-3m)."@en ;
                         rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
                         rdfs:label "SpinelStructure"@en ;
                         skos:example "Li4Ti5O12 (mp-685194)"@en ,
@@ -1083,39 +1040,6 @@ battgpt:UnitCell rdf:type owl:Class ;
 #################################################################
 #    Individuals
 #################################################################
-
-###  https://w3id.org/battgpt/kg#Fd3mIndividual
-battgpt:Fd3mIndividual rdf:type owl:NamedIndividual ,
-                                 battgpt:SpaceGroup ;
-                        battgpt:hasSpaceGroupNumber 227 ;
-                        battgpt:hasSymmetrySymbol "Fd-3m" ;
-                        rdfs:comment "The cubic space group Fd-3m (#227), the canonical space group of the ideal AB2O4 spinel structure."@en ;
-                        rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
-                        rdfs:label "Fd3mIndividual"@en ;
-                        skos:prefLabel "Fd3mIndividual"@en .
-
-
-###  https://w3id.org/battgpt/kg#Ia3dIndividual
-battgpt:Ia3dIndividual rdf:type owl:NamedIndividual ,
-                                battgpt:SpaceGroup ;
-                       battgpt:hasSpaceGroupNumber 230 ;
-                       battgpt:hasSymmetrySymbol "Ia-3d" ;
-                       rdfs:comment "The cubic space group Ia-3d (#230), the space group of the garnet-type structure (e.g. cubic Li7La3Zr2O12/LLZO)."@en ;
-                       rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
-                       rdfs:label "Ia3dIndividual"@en ;
-                       skos:prefLabel "Ia3dIndividual"@en .
-
-
-###  https://w3id.org/battgpt/kg#PnmaIndividual
-battgpt:PnmaIndividual rdf:type owl:NamedIndividual ,
-                                battgpt:SpaceGroup ;
-                       battgpt:hasSpaceGroupNumber 62 ;
-                       battgpt:hasSymmetrySymbol "Pnma" ;
-                       rdfs:comment "The orthorhombic space group Pnma (#62), the space group of the olivine-type structure (e.g. LiFePO4, mp-19017)."@en ;
-                       rdfs:isDefinedBy <https://w3id.org/battgpt/kg#> ;
-                       rdfs:label "PnmaIndividual"@en ;
-                       skos:prefLabel "PnmaIndividual"@en .
-
 
 ###  https://w3id.org/battgpt/kg#ArgyroditeStructureIndividual
 battgpt:ArgyroditeStructureIndividual rdf:type owl:NamedIndividual ,
