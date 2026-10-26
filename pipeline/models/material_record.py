@@ -96,8 +96,8 @@ class MaterialRecord:
     coordination_method_used: str = "CrystalNN"
 
     # ── Step 3: SMACT Chemical Enrichment ──
-    smact_is_valid: bool = False
-    smact_neutrality: bool = False
+    smact_is_valid: bool | None = None
+    smact_neutrality: bool | None = None
     smact_oxidation_states: dict[str, int] = field(default_factory=dict)
     electronegativity_map: dict[str, float] = field(default_factory=dict)
 

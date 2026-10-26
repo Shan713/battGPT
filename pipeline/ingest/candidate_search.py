@@ -136,3 +136,47 @@ def pick_representative_polymorph(docs: list) -> tuple:
     if docs:
         return min(docs, key=lambda d: (d.energy_above_hull if d.energy_above_hull is not None else 1e9)), "lowest E_above_hull (all entries theoretical-only)"
     return None, None
+
+
+# --- Growing the KG beyond the ratio-pattern sweeps (K-Ont BUILD_LOG Step 22) ----------------------
+#
+# The ratio sweeps above find ~250 candidates in total -- enough for the first OnT-ABox KG, nowhere
+# near 1,000-5,000. Materials Project holds far more battery-relevant compounds within the same
+# energy/size filters (measured 1 Oct 2026: 12,974 Li-containing entries over 6,222 formulas and
+# 4,274 Na-containing entries over 3,304 formulas, at <=0.15 eV/atom above hull, <=40 sites, 2-5
+# elements). sweep_broad_pool() pulls those. Fields include "symmetry" so each representative can be
+# classified locally without a second round of API calls.
+
+_GROW_FIELDS = _LIGHT_FIELDS + ["symmetry"]
+
+
+def sweep_broad_pool(mpr, alkalis=("Li", "Na"), e_hull_ceiling: float = _E_HULL_CEILING,
+                     max_sites: int = _MAX_SITES) -> dict[str, list]:
+    """Every Li-/Na-containing compound (2-5 elements) within the usual stability and size limits.
+
+    Returns {formula_pretty: [docs]} like sweep_candidates(); merge the two by material_id."""
+    by_formula: dict[str, list] = {}
+    for alkali in alkalis:
+        docs = mpr.materials.summary.search(
+            elements=[alkali], energy_above_hull=(0, e_hull_ceiling), num_sites=(1, max_sites),
+            num_elements=(2, 5), fields=_GROW_FIELDS,
+        )
+        for d in docs:
+            by_formula.setdefault(d.formula_pretty, []).append(d)
+        logger.info(f"  broad pool alkali={alkali}: {len(docs)} entries -> {len(by_formula)} distinct formulas so far")
+    return by_formula
+
+
+def pick_polymorph_group(docs: list, representative_id: str, max_total: int = 3,
+                         e_hull_window: float = 0.05) -> list:
+    """Extra polymorphs of one formula to keep ALONGSIDE its representative, so the KG holds look-alike
+    crystals (same composition, different structure). Without them every formula is unique, and
+    matching a material to its crystal can be solved by composition alone (K-Ont Steps 17 and 21).
+
+    Only entries within e_hull_window eV/atom of the hull: realistic competing structures, not DFT
+    artefacts far above it. Lowest energy first, at most max_total - 1 extras."""
+    others = [d for d in docs
+              if str(d.material_id) != representative_id and d.energy_above_hull is not None
+              and d.energy_above_hull <= e_hull_window]
+    others.sort(key=lambda d: (d.energy_above_hull, str(d.material_id)))
+    return others[: max(0, max_total - 1)]

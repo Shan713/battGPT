@@ -63,6 +63,15 @@ COORDINATION_GEOMETRY_INDIVIDUAL_MAP = {
 # battery:BatteryCell, reused (not redefined) from EMMO domain-battery.
 BATTERY_CELL_CLASS = BATTERY.battery_68ed592a_7924_45d0_a108_94d6275d57f0
 
+# record property name -> the battgpt property class declared for it in battgpt.ttl
+PROPERTY_CLASS_MAP = {
+    "band_gap": BATTGPT.BandGapProperty,
+    "formation_energy_per_atom": BATTGPT.FormationEnergyProperty,
+    "energy_above_hull": BATTGPT.EnergyAboveHullProperty,
+    "bulk_modulus": BATTGPT.BulkModulusProperty,
+    "shear_modulus": BATTGPT.ShearModulusProperty,
+}
+
 
 class TripleGenerator:
     """Generates RDF triples for a MaterialRecord entity using Stage 2.3.2 schema rules."""
@@ -91,6 +100,9 @@ class TripleGenerator:
             graph.add((mat_uri, BATTGPT.hasChemsys, Literal(record.chemsys, datatype=XSD.string)))
         if record.is_theoretical is not None:
             graph.add((mat_uri, BATTGPT.isTheoretical, Literal(record.is_theoretical, datatype=XSD.boolean)))
+
+        if record.smact_is_valid is not None:
+            graph.add((mat_uri, BATTGPT.hasSmactValidity, Literal(record.smact_is_valid, datatype=XSD.boolean)))
 
         graph.add((mat_uri, BATTGPT.hasStructure, cryst_uri))
         graph.add((mat_uri, DCTERMS.source, Literal(mp_prov, datatype=XSD.string)))
@@ -130,6 +142,9 @@ class TripleGenerator:
         graph.add((sg_uri, BATTGPT.hasSymmetrySymbol, Literal(record.symmetry_symbol, datatype=XSD.string)))
         graph.add((sg_uri, BATTGPT.hasSpaceGroupNumber, Literal(record.spacegroup_number, datatype=XSD.integer)))
         graph.add((sg_uri, PROV.wasGeneratedBy, Literal(record.provenance_map.get("symmetry", "Pymatgen"), datatype=XSD.string)))
+        # every space group belongs to exactly one crystal system; both nodes were already written,
+        # the link between them was not (K-Ont BUILD_LOG Step 24)
+        graph.add((sg_uri, BATTGPT.belongsToCrystalSystem, cs_uri))
 
         # ── 5. CrystalSystem Node ──
         graph.add((cs_uri, RDF.type, BATTGPT.CrystalSystem))
@@ -225,8 +240,11 @@ class TripleGenerator:
                 graph.add((mat_uri, BATTGPT.hasShearModulus, prop_uri))
                 graph.add((cryst_uri, BATTGPT.hasShearModulus, prop_uri))
 
-            # Property Entity (typed as emmo:Property)
+            # Property Entity (typed as emmo:Property, plus its specific battgpt class when the
+            # ontology declares one -- those classes were never instantiated before, Step 24)
             graph.add((prop_uri, RDF.type, EMMO_PROPERTY_CLASS))
+            if prop.name in PROPERTY_CLASS_MAP:
+                graph.add((prop_uri, RDF.type, PROPERTY_CLASS_MAP[prop.name]))
             graph.add((prop_uri, RDFS.label, Literal(f"{prop.name} of {record.material_id}", lang="en")))
             graph.add((prop_uri, EMMO_HAS_VALUE, Literal(prop.value, datatype=XSD.double)))
             graph.add((prop_uri, EMMO_HAS_UNIT, unit_uri))

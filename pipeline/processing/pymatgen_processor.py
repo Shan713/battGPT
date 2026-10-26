@@ -3,6 +3,7 @@ import logging
 from pymatgen.core import Structure, Lattice, Species
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.analysis.local_env import CrystalNN, VoronoiNN
+from pymatgen.analysis.bond_valence import BVAnalyzer
 from ..models import MaterialRecord, SiteData, BondData
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,20 @@ class PymatgenProcessor:
             record.beta = round(float(struct.lattice.beta), 2)
             record.gamma = round(float(struct.lattice.gamma), 2)
             record.provenance_map["lattice"] = "Pymatgen (Lattice)"
+
+            # 2b. Oxidation states. Live MP structures carry none, so battgpt:hasOxidationState was
+            #     never written (K-Ont BUILD_LOG Step 24). Bond-valence analysis is the method MP itself
+            #     uses for its "possible_species"; it fails on metals/intermetallics, which then stay
+            #     without oxidation states rather than getting a guess.
+            if all(s.oxidation_state is None for s in record.sites):
+                try:
+                    valences = BVAnalyzer().get_valences(struct)
+                    if len(valences) == len(record.sites):
+                        for site_data, v in zip(record.sites, valences):
+                            site_data.oxidation_state = int(v)
+                        record.provenance_map["oxidation_states"] = "Pymatgen (BVAnalyzer bond valence)"
+                except Exception as e:
+                    logger.debug(f"BVAnalyzer found no valences for {record.material_id}: {e}")
 
             # 3. Perform CrystalNN / VoronoiNN Connectivity Graph Analysis
             coord_method = "CrystalNN"

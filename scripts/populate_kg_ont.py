@@ -24,7 +24,9 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from pipeline.config import PipelineConfig
 from pipeline.ingest import MPIngester
-from pipeline.ingest.candidate_search import sweep_candidates, pick_representative_polymorph
+from pipeline.ingest.candidate_search import (
+    sweep_candidates, pick_representative_polymorph, sweep_broad_pool, pick_polymorph_group,
+)
 from pipeline.processing import (
     PymatgenProcessor, SMACTProcessor, BattINFOMapper, StructureFamilyMapper, ElectrochemistryProcessor,
 )
@@ -137,34 +139,199 @@ def build_candidate_list(config: PipelineConfig, cap: int, use_cache: bool) -> t
     return final_ids, summary
 
 
+def build_grown_candidate_list(config: PipelineConfig, cap: int, cache_path: Path, use_cache: bool,
+                               polymorph_share: float, max_polymorphs: int, polymorph_window: float):
+    """--grow mode (K-Ont BUILD_LOG Step 22): candidates from the ratio sweeps AND the broad Li/Na pool,
+    one representative per formula as before, plus polymorph groups so some formulas appear with
+    several crystal structures.
+
+    Fill order up to `cap`: curated ids -> every representative the classifier gives a structure
+    family -> polymorph groups (representative + extras) until `polymorph_share * cap` materials sit
+    in such groups -> remaining representatives by energy above hull. Deterministic for a given
+    cache. The original build_candidate_list() path is untouched.
+    """
+    from pipeline.models import MaterialRecord
+
+    curated_ids = list(dict.fromkeys(config.sample_materials + config.cathode_test_materials))
+    cache_file = Path(__file__).resolve().parents[1] / "pipeline" / "data" / "cached_mp_materials.json"
+    curated_formulas = set()
+    if cache_file.exists():
+        for entry in json.loads(cache_file.read_text()).values():
+            f = entry.get("formula_pretty") or entry.get("formula")
+            if f:
+                curated_formulas.add(f)
+
+    if use_cache and cache_path.exists():
+        logger.info(f"Loading cached grown candidate search from {cache_path}")
+        reps = json.loads(cache_path.read_text())
+    else:
+        from mp_api.client import MPRester
+        mapper = StructureFamilyMapper()
+        with MPRester(config.mp_api_key, mute_progress_bars=True) as mpr:
+            merged = {}
+            for by_formula in (sweep_candidates(mpr), sweep_broad_pool(mpr)):
+                for formula, docs in by_formula.items():
+                    slot = merged.setdefault(formula, {})
+                    for d in docs:
+                        slot[str(d.material_id)] = d
+            reps, docs_by_formula, need_sym = {}, {}, []
+            for formula, by_id in merged.items():
+                docs = list(by_id.values())
+                d, why = pick_representative_polymorph(docs)
+                if d is None:
+                    continue
+                extras = pick_polymorph_group(docs, str(d.material_id), max_polymorphs, polymorph_window)
+                reps[formula] = {
+                    "material_id": str(d.material_id), "n_polymorphs": len(docs),
+                    "polymorph_choice_reason": why, "energy_above_hull": d.energy_above_hull,
+                    "polymorph_extras": [{"material_id": str(x.material_id), "energy_above_hull": x.energy_above_hull}
+                                         for x in extras],
+                }
+                docs_by_formula[formula] = d
+                if getattr(d, "symmetry", None) is None:
+                    need_sym.append(str(d.material_id))
+            # ratio-sweep docs carry no "symmetry"; fetch it only for representatives that lack it
+            sym = {}
+            for i in range(0, len(need_sym), 50):
+                for dd in mpr.materials.summary.search(material_ids=need_sym[i:i + 50],
+                                                       fields=["material_id", "symmetry"],
+                                                       num_chunks=1, chunk_size=50):
+                    sym[str(dd.material_id)] = dd.symmetry.number
+        for formula, entry in reps.items():
+            d = docs_by_formula[formula]
+            sg = sym.get(entry["material_id"]) or (d.symmetry.number if getattr(d, "symmetry", None) else None)
+            rec = MaterialRecord(material_id=entry["material_id"], formula=d.formula_pretty,
+                                 composition={str(k): float(v) for k, v in d.composition.items()})
+            rec.spacegroup_number = sg
+            mapper.process(rec)
+            entry["structure_family_preview"] = rec.structure_family
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(json.dumps(reps, indent=2))
+        logger.info(f"Saved grown candidate search ({len(reps)} formulas) to {cache_path}")
+
+    reps = {f: e for f, e in reps.items() if f not in curated_formulas}
+
+    def by_ehull(fe):
+        eh = fe[1].get("energy_above_hull")
+        return (eh if eh is not None else 1e9, fe[1]["material_id"])
+
+    classified = sorted([(f, e) for f, e in reps.items() if e.get("structure_family_preview")], key=by_ehull)
+    unclassified = sorted([(f, e) for f, e in reps.items() if not e.get("structure_family_preview")], key=by_ehull)
+
+    final_ids = list(curated_ids)
+    seen = set(final_ids)
+
+    def add(mid):
+        if len(final_ids) < cap and mid not in seen:
+            final_ids.append(mid)
+            seen.add(mid)
+            return True
+        return False
+
+    n_classified = sum(add(e["material_id"]) for _, e in classified)
+    # polymorph groups: classified formulas first (their structures matter most), then the rest
+    budget = int(round(polymorph_share * cap))
+    in_groups, groups = 0, []
+    for f, e in classified + unclassified:
+        if in_groups >= budget or len(final_ids) >= cap:
+            break
+        extras = [x["material_id"] for x in e.get("polymorph_extras", [])]
+        if not extras:
+            continue
+        members = [e["material_id"]] + extras
+        for m in members:
+            add(m)
+        kept = [m for m in members if m in seen]
+        if len(kept) >= 2:
+            groups.append({"formula": f, "material_ids": kept})
+            in_groups += len(kept)
+    n_rest = sum(add(e["material_id"]) for _, e in unclassified)
+
+    summary = {
+        "mode": "grow", "cap": cap, "curated_count": len(curated_ids),
+        "candidate_formulas": len(reps), "candidates_classified": len(classified),
+        "added_classified": n_classified, "polymorph_groups": len(groups),
+        "materials_in_polymorph_groups": in_groups, "polymorph_share_target": polymorph_share,
+        "added_other": n_rest, "final_total": len(final_ids),
+    }
+    return final_ids, summary, groups
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cap", type=int, default=250, help="Max total materials in the final KG.")
     ap.add_argument("--dry-run", action="store_true", help="Search + classify only, print summary, no ingestion.")
     ap.add_argument("--use-cache", action="store_true", help="Reuse a previous candidate search (K-Ont/data/candidate_materials.json) instead of hitting the API again.")
+    ap.add_argument("--grow", action="store_true", help="K-Ont Step 22: broad Li/Na pool + polymorph groups (build_grown_candidate_list).")
+    ap.add_argument("--out-dir", type=Path, default=None, help="Output folder (default output/battgpt_kg_ont, or output/battgpt_kg_grow_<cap> with --grow).")
+    ap.add_argument("--cache", type=Path, default=None, help="--grow candidate cache (default K-Ont/data/candidate_materials_grow.json).")
+    ap.add_argument("--polymorph-share", type=float, default=0.25, help="--grow: target fraction of the KG in polymorph groups.")
+    ap.add_argument("--max-polymorphs", type=int, default=3, help="--grow: at most this many structures per formula.")
+    ap.add_argument("--polymorph-window", type=float, default=0.05, help="--grow: extra polymorphs within this many eV/atom of the hull.")
+    ap.add_argument("--ids-file", type=Path, default=None,
+                    help="K-Ont Step 56: ingest exactly these material ids (JSON list), skipping candidate selection -- "
+                         "lets a large KG be built in chunks that fit in memory. Requires --out-dir.")
     args = ap.parse_args()
 
     config = PipelineConfig()
-    output_dir = PROJECT_ROOT / "output" / "battgpt_kg_ont"
+    default_out = f"battgpt_kg_grow_{args.cap}" if args.grow else "battgpt_kg_ont"
+    output_dir = args.out_dir or (PROJECT_ROOT / "output" / default_out)
 
     logger.info("Step 1: Searching + classifying candidate materials...")
-    material_ids, summary = build_candidate_list(config, args.cap, args.use_cache)
+    groups = []
+    if args.ids_file:
+        if not args.out_dir:
+            ap.error("--ids-file requires --out-dir")
+        material_ids = list(dict.fromkeys(json.loads(args.ids_file.read_text())))
+        summary = {"mode": "ids-file", "ids_file": str(args.ids_file), "final_total": len(material_ids)}
+    elif args.grow:
+        cache_path = args.cache or (PROJECT_ROOT / "K-Ont" / "data" / "candidate_materials_grow.json")
+        material_ids, summary, groups = build_grown_candidate_list(
+            config, args.cap, cache_path, args.use_cache,
+            args.polymorph_share, args.max_polymorphs, args.polymorph_window)
+    else:
+        material_ids, summary = build_candidate_list(config, args.cap, args.use_cache)
     logger.info(f"Candidate summary: {json.dumps(summary, indent=2)}")
 
     if args.dry_run:
+        if groups:
+            logger.info(f"Example polymorph groups: {json.dumps(groups[:5])}")
         logger.info(f"Dry run: would ingest {len(material_ids)} materials. Exiting without building the KG.")
         return
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "selected_material_ids.json").write_text(json.dumps(
+        {"material_ids": material_ids, "polymorph_groups": groups, "summary": summary}, indent=2))
 
     logger.info(f"Step 2: Ingesting {len(material_ids)} materials (cache-first, live API fallback)...")
     ingester = MPIngester(config)
     pmg = PymatgenProcessor(); smact = SMACTProcessor(); mapper = BattINFOMapper()
-    structure_family = StructureFamilyMapper(); electrochemistry = ElectrochemistryProcessor()
+    structure_family = StructureFamilyMapper()
+    # Live MP insertion-electrode data for the selected materials (the cache alone covers 10).
+    from mp_api.client import MPRester
+    from pipeline.processing.electrochemistry_processor import fetch_insertion_electrode_index
+    with MPRester(config.mp_api_key, mute_progress_bars=True) as mpr:
+        electrode_index = fetch_insertion_electrode_index(mpr, material_ids)
+    logger.info(f"Live insertion-electrode data found for {len(electrode_index)}/{len(material_ids)} materials.")
+    electrochemistry = ElectrochemistryProcessor(live_index=electrode_index)
 
-    records = []
+    def ingest_with_retry(mid):
+        # MPIngester returns a placeholder record (formula = the id, no composition, no structure)
+        # when the live fetch fails -- e.g. the ~7 min DNS outage that put 52 fake materials into the
+        # first 5,000 build. Retry with backoff instead of writing that into the KG.
+        for wait in (0, 30, 60, 120, 240):
+            if wait:
+                logger.warning(f"  {mid}: live fetch failed, retrying in {wait}s")
+                time.sleep(wait)
+            rec = ingester.ingest_material(mid)
+            if rec.provenance_map.get("material_id") != "Offline Fallback Default":
+                return rec
+        raise RuntimeError("still a placeholder record after retries")
+
+    records, failed = [], []
     t_start = time.time()
     for i, mid in enumerate(material_ids):
         try:
-            rec = ingester.ingest_material(mid)
+            rec = ingest_with_retry(mid)
             pmg.process(rec)
             smact.process(rec)
             mapper.process(rec)
@@ -173,6 +340,7 @@ def main():
             records.append(rec)
         except Exception as e:
             logger.error(f"  SKIPPED {mid}: {e}")
+            failed.append(mid)
         if (i + 1) % 25 == 0:
             elapsed = time.time() - t_start
             rate = (i + 1) / elapsed
@@ -180,6 +348,9 @@ def main():
             logger.info(f"  ...{i + 1}/{len(material_ids)} done ({elapsed:.0f}s elapsed, ~{eta:.0f}s remaining)")
 
     logger.info(f"Step 2 Complete: {len(records)}/{len(material_ids)} materials ingested successfully.")
+    if failed:
+        logger.error(f"{len(failed)} materials could not be ingested: {failed}. Not building a KG with gaps.")
+        sys.exit(1)
 
     logger.info("Step 3: Constructing RDF Knowledge Graph...")
     builder = RDFBuilder()

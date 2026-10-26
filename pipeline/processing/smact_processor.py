@@ -1,6 +1,7 @@
 """SMACT Chemical Processing Engine using genuine smact package calls."""
 import logging
 from smact import Element as SmactElement
+from smact.screening import smact_validity
 from ..models import MaterialRecord
 
 logger = logging.getLogger(__name__)
@@ -25,27 +26,19 @@ class SMACTProcessor:
                 if site.oxidation_state is not None:
                     record.smact_oxidation_states[site.element_symbol] = site.oxidation_state
 
-            # 3. Neutrality and Charge Balance Evaluation based on formula composition
-            if record.composition and record.smact_oxidation_states:
-                net_charge = 0.0
-                all_elems_covered = True
-                for elem_sym, count in record.composition.items():
-                    ox = record.smact_oxidation_states.get(elem_sym)
-                    if ox is not None:
-                        net_charge += float(count) * float(ox)
-                    else:
-                        all_elems_covered = False
-                        break
-
-                if all_elems_covered:
-                    # Allow tolerance for mixed-valence compounds (e.g. LiMn2O4 spinel)
-                    record.smact_neutrality = (abs(net_charge) <= 1.05)
-                else:
-                    record.smact_neutrality = True
+            # 3. SMACT validity: can the composition be charge-balanced with SMACT's allowed oxidation
+            #    states, with electronegativity ordered sensibly (Pauling test)? This is SMACT's own
+            #    screening function, independent of the oxidation states assigned to the sites. The
+            #    previous version defaulted to "valid" whenever oxidation states were missing, which
+            #    was every live-fetched material (K-Ont BUILD_LOG Step 24); unknown now stays None
+            #    and nothing is written for it.
+            if record.composition:
+                comp = "".join(f"{el}{amt:g}" for el, amt in record.composition.items())
+                record.smact_is_valid = bool(smact_validity(comp))
+                record.smact_neutrality = record.smact_is_valid
             else:
-                record.smact_neutrality = True
-
-            record.smact_is_valid = record.smact_neutrality
+                record.smact_is_valid = None
+                record.smact_neutrality = None
             record.provenance_map["smact"] = "SMACT 4.0 Chemical Engine"
             record.processing_status["smact_success"] = True
 
